@@ -90,26 +90,37 @@ onMounted(() => {
 
 // 执行导出
 const handleExport = async () => {
+  if (questionCount.value === 0) {
+    ElMessage.warning('没有可导出的题目')
+    return
+  }
+
   loading.value = true
   try {
     const questions = getExportQuestions()
-    
-    if (questions.length === 0) {
-      ElMessage.warning('没有符合条件的题目')
-      loading.value = false
-      return
-    }
     
     if (exportSettings.value.format === 'excel') {
       await exportToExcel(questions)
       ElMessage.success('Excel导出成功')
     } else {
+      // Word导出进度提示
+      ElMessage({
+        type: 'info',
+        message: '正在生成Word文档，请稍候...',
+        duration: 2000
+      })
       await exportToWord(questions, typeMap)
-      ElMessage.success('Word导出成功')
+      ElMessage.success({
+        message: 'Word导出成功，请查看下载的文件',
+        duration: 3000
+      })
     }
   } catch (error) {
     console.error('导出失败:', error)
-    ElMessage.error('导出失败，请检查控制台错误')
+    ElMessage.error({
+      message: `导出失败: ${error.message || '未知错误'}`,
+      duration: 5000
+    })
   } finally {
     loading.value = false
   }
