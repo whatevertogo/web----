@@ -1,0 +1,155 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* 主题颜色 */
+  --el-color-primary: #409EFF;
+  --el-color-success: #67C23A;
+  --el-color-warning: #E6A23C;
+  --el-color-danger: #F56C6C;
+  --el-color-info: #909399;
+  
+  /* 文字颜色 */
+  --el-text-color-primary: #303133;
+  --el-text-color-regular: #606266;
+  --el-text-color-secondary: #909399;
+  
+  /* 边框颜色 */
+  --el-border-color: #DCDFE6;
+  --el-border-color-light: #E4E7ED;
+  
+  /* 背景颜色 */
+  --el-bg-color: #F5F7FA;
+  
+  /* 间距 */
+  --spacing-small: 8px;
+  --spacing-base: 16px;
+  --spacing-large: 24px;
+  
+  /* 字体大小 */
+  --font-size-small: 13px;
+  --font-size-base: 14px;
+  --font-size-medium: 16px;
+  --font-size-large: 18px;
+  --font-size-xlarge: 22px;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: block;
+  min-width: 320px;
+  background: linear-gradient(135deg, #3a8bbb 0%, #6b5b95 100%);
+  min-height: 100vh;
+  color: #333;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.card {
+  padding: 2em;
+}
+
+#app {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  min-height: 100vh;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .el-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  .el-col {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  .page-container {
+    padding: 10px;
+  }
+}
+
+.page-container {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin: 20px;
+}
+
+/* 添加过渡动画 */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
+
+.exam-container {
+  width: 100%;
+  height: 100vh;
+}
+
+/* 重置一些基本元素的样式 */
+h1, h2, h3, h4, h5, h6, p {
+  margin-top: 0;
+  color: #333;
+}
