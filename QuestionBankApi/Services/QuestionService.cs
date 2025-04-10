@@ -1,3 +1,10 @@
+/*
+ * QuestionService.cs
+ * ------------------
+ * 题目服务实现类，实现IQuestionService接口。
+ * 负责封装题目的业务逻辑，调用数据库上下文进行数据操作。
+ */
+
 using QuestionBankApi.DTOs;
 using QuestionBankApi.Models;
 using QuestionBankApi.Data;
@@ -5,15 +12,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace QuestionBankApi.Services;
 
+/// <summary>
+/// 题目服务实现，封装题目的业务逻辑
+/// </summary>
 public class QuestionService : IQuestionService
 {
     private readonly AppDbContext _db;
 
+    /// <summary>
+    /// 构造函数，注入数据库上下文
+    /// </summary>
+    /// <param name="db">数据库上下文</param>
     public QuestionService(AppDbContext db)
     {
         _db = db;
     }
 
+    /// <summary>
+    /// 获取所有题目
+    /// </summary>
+    /// <returns>题目DTO列表</returns>
     public async Task<List<QuestionDto>> GetAllAsync()
     {
         return await _db.Questions
@@ -33,6 +51,11 @@ public class QuestionService : IQuestionService
             }).ToListAsync();
     }
 
+    /// <summary>
+    /// 根据ID获取题目
+    /// </summary>
+    /// <param name="id">题目ID</param>
+    /// <returns>题目DTO，未找到返回null</returns>
     public async Task<QuestionDto?> GetByIdAsync(int id)
     {
         var q = await _db.Questions.FindAsync(id);
@@ -54,6 +77,11 @@ public class QuestionService : IQuestionService
         };
     }
 
+    /// <summary>
+    /// 添加题目
+    /// </summary>
+    /// <param name="dto">题目DTO</param>
+    /// <returns>添加后的题目DTO</returns>
     public async Task<QuestionDto> AddAsync(QuestionDto dto)
     {
         var model = new Question
@@ -78,6 +106,11 @@ public class QuestionService : IQuestionService
         return dto;
     }
 
+    /// <summary>
+    /// 更新题目
+    /// </summary>
+    /// <param name="dto">题目DTO</param>
+    /// <returns>是否成功</returns>
     public async Task<bool> UpdateAsync(QuestionDto dto)
     {
         var q = await _db.Questions.FindAsync(dto.Id);
@@ -98,6 +131,11 @@ public class QuestionService : IQuestionService
         return true;
     }
 
+    /// <summary>
+    /// 删除题目
+    /// </summary>
+    /// <param name="id">题目ID</param>
+    /// <returns>是否成功</returns>
     public async Task<bool> DeleteAsync(int id)
     {
         var q = await _db.Questions.FindAsync(id);
