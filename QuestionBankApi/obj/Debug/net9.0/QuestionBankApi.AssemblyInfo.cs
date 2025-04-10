@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("QuestionBankApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dfa8bdafbd78906453273c41055a3e7ca1eb69d1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b826aca90f201cb59bdb8f374a467960bdd11205")]
 [assembly: System.Reflection.AssemblyProductAttribute("QuestionBankApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("QuestionBankApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
