@@ -12,11 +12,11 @@ const router = useRouter()
 
 // 题型映射
 const typeMap: TypeMap = {
-  single: '单选题',
-  judge: '判断题',
-  fill: '填空题',
-  program: '编程题',
-  shortAnswer: '简答题'
+  [QuestionType.Single]: '单选题',
+  [QuestionType.Judge]: '判断题',
+  [QuestionType.Fill]: '填空题',
+  [QuestionType.Program]: '编程题',
+  [QuestionType.ShortAnswer]: '简答题'
 }
 
 // 表格数据改为使用服务中的数据
@@ -47,7 +47,7 @@ const handleSearch = async () => {
   try {
     const questions = await questionService.getQuestions({
       keyword: searchForm.keyword,
-      type: searchForm.type as QuestionType || undefined,
+      type: searchForm.type ? Number(searchForm.type) as QuestionType : undefined,
       dateRange: searchForm.dateRange.length ? 
         [searchForm.dateRange[0], searchForm.dateRange[1]] : undefined
     })
@@ -173,13 +173,7 @@ const loadQuestions = async () => {
   loading.value = true
   try {
     // 强制重新加载数据，而不是使用缓存
-    await questionService.initializeData(true)
-    const questions = await questionService.getQuestions({
-      keyword: searchForm.keyword,
-      type: searchForm.type as QuestionType || undefined,
-      dateRange: searchForm.dateRange.length ? 
-        [searchForm.dateRange[0], searchForm.dateRange[1]] : undefined
-    })
+    const questions = await questionService.getQuestions() as TableQuestion[]
     tableData.value = questions
     console.log('加载到的题目数量:', questions.length)
   } catch (error) {
@@ -383,10 +377,9 @@ onActivated(() => {
 
           <!-- 判断题 -->
           <template v-if="editForm.type === 'judge'">
-            <el-form-item label="正确答案">
-              <el-radio-group v-model="editForm.correctAnswer">
-                <el-radio label="true">正确</el-radio>
-                <el-radio label="false">错误</el-radio>
+            <el-form-item label="正确答案">              <el-radio-group v-model="editForm.correctAnswer">
+                <el-radio value="正确">正确</el-radio>
+                <el-radio value="错误">错误</el-radio>
               </el-radio-group>
             </el-form-item>
           </template>

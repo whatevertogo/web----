@@ -15,19 +15,33 @@
 using Microsoft.EntityFrameworkCore;
 using QuestionBankApi.Data;
 using QuestionBankApi.Services;
-using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 添加 CORS 服务，允许前端跨域请求
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowVueApp",
-        builder => builder
-            .WithOrigins("https://localhost:5173") // Vue开发服务器的HTTPS地址
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials());
+    options.AddPolicy("AllowVueApp", builder =>
+    {
+        builder
+            .WithOrigins(
+                "http://localhost:5173",  // Vite 默认端口
+                "http://localhost:3000",  // 备用端口
+                "http://localhost:8080",  // Vue CLI 默认端口
+                "http://127.0.0.1:5173"   // 使用 IP 而非 localhost
+            )
+            .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 明确指定允许的HTTP方法
+            .WithHeaders(              // 明确指定允许的请求头
+                "Content-Type",
+                "Authorization",
+                "Accept"
+            )
+            .WithExposedHeaders(       // 允许前端访问的响应头
+                "Content-Disposition"
+            )
+            .AllowCredentials()        // 允许发送认证信息（cookies等）
+            .SetPreflightMaxAge(TimeSpan.FromMinutes(10)); // 预检请求缓存时间
+    });
 });
 
 // 注册控制器
@@ -54,11 +68,22 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseExceptionHandler(builder => {
+    builder.Run(async context => {
+        var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+        var response = new {
+            success = false,
+            message = exception?.Message ?? "An error occurred"
+        };
+        
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(response);
+    });
+});
+
 // 启用CORS策略
 app.UseCors("AllowVueApp");
-
-// 启用HTTPS重定向
-app.UseHttpsRedirection();
 
 // 启用授权中间件
 app.UseAuthorization();

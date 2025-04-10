@@ -21,6 +21,16 @@ public interface IQuestionService
     Task<List<QuestionDto>> GetAllAsync();
 
     /// <summary>
+    /// 根据条件筛选题目
+    /// </summary>
+    /// <param name="keyword">关键词</param>
+    /// <param name="type">题型</param>
+    /// <param name="startDate">开始日期</param>
+    /// <param name="endDate">结束日期</param>
+    /// <returns>题目DTO列表</returns>
+    Task<List<QuestionDto>> GetAllAsync(string? keyword, int? type, DateTime? startDate, DateTime? endDate);
+
+    /// <summary>
     /// 根据ID获取题目
     /// </summary>
     /// <param name="id">题目ID</param>

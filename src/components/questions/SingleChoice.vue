@@ -19,7 +19,7 @@ const handleChange = (value: string) => {
   <div class="single-choice">
     <el-radio-group 
       v-model="answer"
-      @input="handleChange"
+      @change="handleChange"
     >
       <el-radio
         v-for="(option, index) in question.options"

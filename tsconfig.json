@@ -8,8 +8,8 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "target": "ES2022",
-    "lib": ["DOM", "DOM.Iterable", "ESNext"]
+    "target": "ES2024",
+    "lib": ["DOM", "DOM.Iterable", "ESNext", "ES2024"]
   },
   "include": [
     "src/**/*.ts",

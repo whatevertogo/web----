@@ -76,6 +76,10 @@ const removeFillBlank = (index) => {
   }
 }
 
+const updateFillAnswer = (index: number, value: string) => {
+  fillForm.answers[index] = value
+}
+
 // 添加表单验证规则
 const rules = {
   single: {
@@ -88,6 +92,15 @@ const rules = {
     correctAnswer: [{ required: true, message: '请选择正确答案', trigger: 'change' }]
   },
   // ... 其他题型的验证规则
+}
+
+// 题型映射
+const typeMap = {
+  [QuestionType.Single]: '单选题',
+  [QuestionType.Judge]: '判断题',
+  [QuestionType.Fill]: '填空题',
+  [QuestionType.Program]: '编程题',
+  [QuestionType.ShortAnswer]: '简答题'
 }
 
 // 表单引用
@@ -129,12 +142,7 @@ const submitQuestion = async (formType: string) => {
     await formRef.validate()
     
     // 保存到服务
-    const savedQuestion = questionService.addQuestion({
-      ...formData,
-      type: formData.type,
-      question: formData.question,
-      analysis: formData.analysis
-    })
+    const savedQuestion = await questionService.addQuestion(formData)
     
     console.log('保存的试题：', savedQuestion)
     ElMessage.success('试题保存成功！')
@@ -206,8 +214,8 @@ const submitQuestion = async (formType: string) => {
           </el-form-item>
           <el-form-item label="正确答案" required>
             <el-radio-group v-model="judgeForm.correctAnswer">
-              <el-radio label="true">正确</el-radio>
-              <el-radio label="false">错误</el-radio>
+              <el-radio value="正确">正确</el-radio>
+              <el-radio value="错误">错误</el-radio>
             </el-radio-group>
           </el-form-item>
           <el-form-item label="答案解析">
@@ -231,7 +239,11 @@ const submitQuestion = async (formType: string) => {
             :label="`填空${index + 1}`"
             required
           >
-            <el-input v-model="fillForm.answers[index]" placeholder="请输入答案">
+            <el-input
+              :model-value="fillForm.answers[index]"
+              @input="updateFillAnswer(index, $event)"
+              placeholder="请输入答案"
+            >
               <template #append>
                 <el-button v-if="index === fillForm.answers.length - 1" @click="addFillBlank" :disabled="fillForm.answers.length >= 5">
                   <el-icon><Plus /></el-icon>

@@ -1,10 +1,27 @@
-// 问题类型枚举
+// 问题类型枚举（与后端对应）
 export enum QuestionType {
-  Single = 'single',
-  Judge = 'judge',
-  Fill = 'fill',
-  Program = 'program',
-  ShortAnswer = 'shortAnswer'
+  Single = 0,
+  Judge = 1,
+  Fill = 2,
+  Program = 3,
+  ShortAnswer = 4
+}
+
+// 题型映射类型
+export interface TypeMap {
+  [key: string]: string;
+  [QuestionType.Single]: string;
+  [QuestionType.Judge]: string;
+  [QuestionType.Fill]: string;
+  [QuestionType.Program]: string;
+  [QuestionType.ShortAnswer]: string;
+}
+
+// 搜索参数接口
+export interface SearchParams {
+  keyword?: string;
+  type?: QuestionType;
+  dateRange?: [Date, Date];
 }
 
 // 基础问题接口
@@ -47,26 +64,42 @@ export interface ShortAnswerQuestionForm extends BaseQuestion {
   referenceAnswer: string;
 }
 
+// 题目 DTO 类型联合
+export type QuestionForm = 
+  | SingleQuestionForm 
+  | JudgeQuestionForm 
+  | FillQuestionForm 
+  | ProgramQuestionForm 
+  | ShortAnswerQuestionForm;
+
 // 表格数据接口
 export interface TableQuestion {
   id: number;
   type: QuestionType;
   question: string;
-  createTime: string;
   options?: string[];
   correctAnswer?: string;
-  analysis?: string;
   answers?: string[];
   sampleInput?: string;
   sampleOutput?: string;
   referenceAnswer?: string;
+  analysis?: string;
+  createTime: string;
+  // TODO: 以下字段暂未实现相关功能
+  category?: string;  // 待实现：题目分类功能
+  tags?: string[];    // 待实现：题目标签功能
 }
-
-// 类型映射接口
-export interface TypeMap extends Record<QuestionType, string> {
-  [QuestionType.Single]: string;
-  [QuestionType.Judge]: string;
-  [QuestionType.Fill]: string;
-  [QuestionType.Program]: string;
-  [QuestionType.ShortAnswer]: string;
+export interface ApiQuestion {
+  id: number;
+  type: QuestionType;
+  content: string;
+  optionsJson?: string;
+  answersJson?: string;
+  examplesJson?: string;
+  tagsJson?: string;
+  analysis?: string;
+  referenceAnswer?: string;
+  createTime?: string;
+  category?: string;
+  difficulty?: number;
 }

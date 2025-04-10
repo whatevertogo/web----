@@ -1,7 +1,8 @@
 export interface ApiResponse<T> {
-  data: T;
-  status: number;
-  message: string;
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
 }
 
 export interface PaginationParams {
@@ -16,4 +17,4 @@ export interface SearchParams {
     field: string;
     order: 'asc' | 'desc';
   };
-} 
+}

@@ -47,7 +47,50 @@ public class QuestionService : IQuestionService
                 ReferenceAnswer = q.ReferenceAnswer,
                 Category = q.Category,
                 Difficulty = q.Difficulty,
-                TagsJson = q.TagsJson
+                TagsJson = q.TagsJson,
+                CreateTime = q.CreateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+            }).ToListAsync();
+    }
+
+    public async Task<List<QuestionDto>> GetAllAsync(string? keyword, int? type, DateTime? startDate, DateTime? endDate)
+    {
+        var query = _db.Questions.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            query = query.Where(q => q.Content.Contains(keyword));
+        }
+
+        if (type.HasValue)
+        {
+            query = query.Where(q => (int)q.Type == type.Value);
+        }
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(q => q.CreateTime >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(q => q.CreateTime <= endDate.Value);
+        }
+
+        return await query
+            .Select(q => new QuestionDto
+            {
+                Id = q.Id,
+                Type = q.Type,
+                Content = q.Content,
+                OptionsJson = q.OptionsJson,
+                AnswersJson = q.AnswersJson,
+                Analysis = q.Analysis,
+                ExamplesJson = q.ExamplesJson,
+                ReferenceAnswer = q.ReferenceAnswer,
+                Category = q.Category,
+                Difficulty = q.Difficulty,
+                TagsJson = q.TagsJson,
+                CreateTime = q.CreateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
             }).ToListAsync();
     }
 
@@ -73,7 +116,8 @@ public class QuestionService : IQuestionService
             ReferenceAnswer = q.ReferenceAnswer,
             Category = q.Category,
             Difficulty = q.Difficulty,
-            TagsJson = q.TagsJson
+            TagsJson = q.TagsJson,
+            CreateTime = q.CreateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
         };
     }
 
@@ -103,6 +147,7 @@ public class QuestionService : IQuestionService
         await _db.SaveChangesAsync();
 
         dto.Id = model.Id;
+        dto.CreateTime = model.CreateTime.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
         return dto;
     }
 

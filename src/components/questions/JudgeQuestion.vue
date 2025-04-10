@@ -19,11 +19,10 @@ const handleChange = (value: string) => {
 }
 </script>
 
-<template>
-  <div class="judge-question">
+<template>  <div class="judge-question">
     <el-radio-group v-model="selectedAnswer" @change="handleChange">
-      <el-radio label="true">正确</el-radio>
-      <el-radio label="false">错误</el-radio>
+      <el-radio value="正确">正确</el-radio>
+      <el-radio value="错误">错误</el-radio>
     </el-radio-group>
   </div>
 </template>

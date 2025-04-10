@@ -30,9 +30,4 @@ app.use(createPinia())
 app.use(ElementPlus)
 app.use(router)
 
-// 初始化数据服务
-questionService.initializeData().catch(err => {
-  console.error('初始化数据失败:', err)
-})
-
 app.mount('#app')

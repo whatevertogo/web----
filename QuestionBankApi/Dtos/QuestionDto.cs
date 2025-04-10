@@ -68,4 +68,9 @@ public class QuestionDto
     /// 标签，JSON格式字符串
     /// </summary>
     public string? TagsJson { get; set; }
+
+    /// <summary>
+    /// 创建时间，格式化字符串
+    /// </summary>
+    public string? CreateTime { get; set; }
 }

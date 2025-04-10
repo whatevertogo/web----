@@ -20,7 +20,7 @@ const handleChange = (value: string) => {
     v-model="answer"
     @change="handleChange"
   >
-    <el-radio label="true">正确</el-radio>
-    <el-radio label="false">错误</el-radio>
+    <el-radio value="正确">正确</el-radio>
+    <el-radio value="错误">错误</el-radio>
   </el-radio-group>
-</template> 
+</template>

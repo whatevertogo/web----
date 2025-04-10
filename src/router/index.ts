@@ -59,10 +59,6 @@ router.beforeEach((to, from, next) => {
 
 router.afterEach((to, from) => {
   if (from.name === 'QuestionManage' && to.name !== 'QuestionManage') {
-    const { questionService } = require('../services/questionService')
-    questionService.initializeData(true).catch(err => {
-      console.error('初始化数据失败:', err)
-    })
   }
 })
 

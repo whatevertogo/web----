@@ -10,6 +10,7 @@
  */
 
 using Microsoft.EntityFrameworkCore;
+using QuestionBankApi.Enums;
 using QuestionBankApi.Models;
 
 namespace QuestionBankApi.Data;
@@ -29,4 +30,33 @@ public class AppDbContext : DbContext
     /// 题目表，存储所有题目信息
     /// </summary>
     public DbSet<Question> Questions => Set<Question>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Question>().HasData(
+            new Question
+            {
+                Id = 1,                Type = QuestionType.Single,
+                Content = "中国的首都是哪里？",
+                OptionsJson = "[\"北京\", \"上海\", \"广州\", \"深圳\"]",
+                AnswersJson = "[\"北京\"]",
+                Analysis = "中国的首都是北京。",
+                Difficulty = 1,
+                CreateTime = DateTime.Now
+            },
+            new Question
+            {
+                Id = 2,
+                Type = QuestionType.Judge,
+                Content = "太阳是恒星。",
+                AnswersJson = "[\"正确\"]",
+                Analysis = "太阳是一颗恒星。",
+                Difficulty = 1,
+                CreateTime = DateTime.Now
+            }
+        );
+
+    }
 }

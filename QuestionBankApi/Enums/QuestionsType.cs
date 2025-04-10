@@ -15,50 +15,25 @@ public enum QuestionType
     /// <summary>
     /// 单选题
     /// </summary>
-    SingleChoice,
-
-    /// <summary>
-    /// 多选题
-    /// </summary>
-    MultipleChoice,
+    Single,
 
     /// <summary>
     /// 判断题
     /// </summary>
-    TrueFalse,
+    Judge,
 
     /// <summary>
     /// 填空题
     /// </summary>
-    FillInTheBlank,
+    Fill,
+
+    /// <summary>
+    /// 编程题
+    /// </summary>
+    Program,
 
     /// <summary>
     /// 简答题
     /// </summary>
-    ShortAnswer,
-
-    /// <summary>
-    /// 论述题
-    /// </summary>
-    Essay,
-
-    /// <summary>
-    /// 代码补全题
-    /// </summary>
-    CodeCompletion,
-
-    /// <summary>
-    /// 代码调试题
-    /// </summary>
-    CodeDebugging,
-
-    /// <summary>
-    /// 代码输出题
-    /// </summary>
-    CodeOutput,
-
-    /// <summary>
-    /// 代码分析题
-    /// </summary>
-    CodeAnalysis
+    ShortAnswer
 }

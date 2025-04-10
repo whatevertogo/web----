@@ -22,11 +22,11 @@ const searchForm = ref({
 
 // 题型映射
 const typeMap = {
-  single: '单选题',
-  judge: '判断题',
-  fill: '填空题',
-  program: '编程题',
-  shortAnswer: '简答题'
+  [QuestionType.Single]: '单选题',
+  [QuestionType.Judge]: '判断题',
+  [QuestionType.Fill]: '填空题',
+  [QuestionType.Program]: '编程题',
+  [QuestionType.ShortAnswer]: '简答题'
 }
 
 // 获取筛选后的题目
@@ -38,15 +38,17 @@ const loading = ref(false)
 const updateFilteredQuestions = async () => {
   loading.value = true
   try {
-    filteredQuestions.value = await questionService.getQuestions({
+    const questions = await questionService.getQuestions({
       keyword: searchForm.value.keyword,
-      type: searchForm.value.type as QuestionType || undefined,
+      type: searchForm.value.type ? Number(searchForm.value.type) as QuestionType : undefined,
       dateRange: searchForm.value.dateRange.length ? 
         [searchForm.value.dateRange[0], searchForm.value.dateRange[1]] : undefined
     })
-  } catch (error) {
+    filteredQuestions.value = questions
+  } catch (error: any) {
     console.error('获取筛选题目失败:', error)
-    ElMessage.error('获取筛选题目失败')
+    ElMessage.error(`获取题目失败: ${error.message || '未知错误'}`)
+    filteredQuestions.value = []
   } finally {
     loading.value = false
   }
@@ -223,10 +225,9 @@ const handleSelectAll = (val) => {
       <div v-loading="loading">
         <div class="export-options">
           <el-form label-width="100px">
-            <el-form-item label="导出格式">
-              <el-radio-group v-model="exportSettings.format">
-                <el-radio label="excel">Excel表格</el-radio>
-                <el-radio label="word">Word文档</el-radio>
+            <el-form-item label="导出格式">              <el-radio-group v-model="exportSettings.format">
+                <el-radio value="excel">Excel表格</el-radio>
+                <el-radio value="word">Word文档</el-radio>
               </el-radio-group>
             </el-form-item>
             

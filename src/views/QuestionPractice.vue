@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useQuestionStore } from '../stores/questionStore'
 import { QuestionType } from '../types/question'
 import { questionService } from '../services/questionService'
 import { SingleChoice, JudgeQuestion, FillBlank, ProgramQuestion, ShortAnswerQuestion } from '../components/questions'
 
 // 考试状态
-const examStatus = ref<'ready' | 'ongoing' | 'finished'>('ready')
+import type { Ref } from 'vue'
+type ExamStatusType = 'ready' | 'ongoing' | 'finished'
+const examStatus: Ref<ExamStatusType> = ref('ready')
 const examQuestions = ref<any[]>([]) // 添加考试题目数组
 const currentQuestion = ref<any>(null)
-const userAnswers = ref<Record<number, any>>({})
+const store = useQuestionStore()
 const examTime = ref(60) // 分钟
 const remainingTime = ref(examTime.value * 60)
 const timer = ref<ReturnType<typeof setInterval>>() // 修改 timer 类型
@@ -43,17 +46,17 @@ const fillAnswers = ref<string[]>([])
 
 // 题型映射
 const typeMap = {
-  single: '单选题',
-  judge: '判断题',
-  fill: '填空题',
-  program: '编程题',
-  shortAnswer: '简答题'
+  [QuestionType.Single]: '单选题',
+  [QuestionType.Judge]: '判断题',
+  [QuestionType.Fill]: '填空题',
+  [QuestionType.Program]: '编程题',
+  [QuestionType.ShortAnswer]: '简答题'
 }
 
 // 考试进度
 const progress = computed(() => {
   const total = examQuestions.value.length
-  const answered = Object.keys(userAnswers.value).length
+  const answered = Object.keys(store.answers).length
   return total ? Math.round((answered / total) * 100) : 0
 })
 
@@ -82,7 +85,7 @@ const questionStats = computed(() => {
   examQuestions.value.forEach(q => {
     stats[q.type].total++
     stats[q.type].score += 10
-    if (userAnswers.value[q.id]) {
+    if (store.answers[q.id]) {
       stats[q.type].answered++
     }
   })
@@ -93,7 +96,7 @@ const questionStats = computed(() => {
 watch(currentQuestion, (newQuestion) => {
   if (newQuestion?.type === 'fill') {
     // 初始化或更新填空答案
-    fillAnswers.value = userAnswers.value[newQuestion.id] || 
+    fillAnswers.value = store.answers[newQuestion.id] ||
       Array(newQuestion.answers?.length || 0).fill('')
     console.log('填空题答案初始化:', fillAnswers.value)
   }
@@ -104,10 +107,12 @@ const handleFillAnswer = (index: number) => {
   if (!currentQuestion.value) return
   
   const questionId = currentQuestion.value.id
-  if (!userAnswers.value[questionId]) {
-    userAnswers.value[questionId] = Array(currentQuestion.value.answers.length).fill('')
+  let answerArr = store.answers[questionId]
+  if (!Array.isArray(answerArr)) {
+    answerArr = Array(currentQuestion.value.answers.length).fill('')
   }
-  userAnswers.value[questionId][index] = fillAnswers.value[index]
+  answerArr[index] = fillAnswers.value[index]
+  store.setAnswer(questionId, answerArr)
 }
 
 // 查看试题详情
@@ -119,6 +124,9 @@ const showQuestionDetail = (question) => {
 // 开始考试
 const startExam = async () => {
   try {
+    // 清空答案缓存
+    store.answers = {}
+
     console.log("开始加载题目...")
     await loadQuestions()
     console.log("题目加载结果:", examQuestions.value)
@@ -192,7 +200,7 @@ const loadQuestions = async () => {
 const handleAnswerSubmit = (value: any) => {
   if (!currentQuestion.value) return
   
-  userAnswers.value[currentQuestion.value.id] = value
+  store.setAnswer(currentQuestion.value.id, value)
   
   // 自动切换到下一题
   const currentIndex = examQuestions.value.findIndex(q => q.id === currentQuestion.value.id)
@@ -214,24 +222,30 @@ const calculateScore = () => {
   let correctCount = 0
   
   examQuestions.value.forEach(question => {
-    const userAnswer = userAnswers.value[question.id]
+    const userAnswer = store.answers[question.id]
     
     // 如果用户没有回答，则不计分
     if (userAnswer === undefined || userAnswer === null || 
         (Array.isArray(userAnswer) && userAnswer.every(a => !a))) return
     
     let isCorrect = false
-    
-    // 根据题型比较答案
+      // 根据题型比较答案
     switch (question.type) {
       case QuestionType.Single:
-        // 单选题：直接比较选项
-        isCorrect = userAnswer === question.correctAnswer
+        if (typeof userAnswer === 'string' && question.correctAnswer) {
+          if (question.correctAnswer.length === 1 && /^[A-Z]$/.test(question.correctAnswer)) {
+            isCorrect = userAnswer === question.correctAnswer;
+          } else {
+            const idx = userAnswer.charCodeAt(0) - 65;
+            const userAnswerContent = question.options?.[idx];
+            isCorrect = userAnswerContent === question.correctAnswer;
+          }
+          console.log(`单选题答案比较: 用户选择=${userAnswer}, 正确答案=${question.correctAnswer}, 结果=${isCorrect}`);
+        }
         break;
       case QuestionType.Judge:
-        // 判断题：比较布尔值或字符串
-        isCorrect = userAnswer === question.correctAnswer || 
-                   userAnswer === String(question.correctAnswer)
+        isCorrect = userAnswer === question.correctAnswer;
+        console.log(`判断题答案比较: 用户选择=${userAnswer}, 正确答案=${question.correctAnswer}, 结果=${isCorrect}`);
         break;
       case QuestionType.Fill:
         // 填空题：需要比较每个空的答案
@@ -301,7 +315,7 @@ const calculateResults = () => {
   let skipped = 0
   
   examQuestions.value.forEach(question => {
-    const userAnswer = userAnswers.value[question.id]
+    const userAnswer = store.answers[question.id]
     
     if (!userAnswer) {
       skipped++
@@ -312,7 +326,13 @@ const calculateResults = () => {
     
     switch (question.type) {
       case QuestionType.Single:
-        isCorrect = userAnswer === question.correctAnswer
+        if (typeof userAnswer === 'string' && question.correctAnswer) {
+          const idx = userAnswer.charCodeAt(0) - 65
+          const userAnswerContent = question.options?.[idx]
+          isCorrect = userAnswerContent === question.correctAnswer
+        } else {
+          isCorrect = false
+        }
         break
       case QuestionType.Judge:
         isCorrect = userAnswer === question.correctAnswer
@@ -402,26 +422,23 @@ onUnmounted(() => {
       <h3>准备开始练习</h3>
       <p>练习时间: {{ examTime }}分钟</p>
       <el-button type="primary" @click="startExam">开始练习</el-button>
-    </div>
-
-    <!-- 练习中状态 - 当有题目时显示 -->
-    <div v-if="examStatus === 'ongoing' && currentQuestion" class="active-question">
-      <div class="question-text">
+    </div>    <!-- 练习中状态 - 当有题目时显示 -->
+    <div v-if="examStatus === 'ongoing' && currentQuestion" class="active-question">      <div class="question-text">
         <h3>{{ typeMap[currentQuestion.type] }}</h3>
         <p>{{ currentQuestion.question }}</p>
-        <el-button type="text" size="small" @click="showQuestionDetail(currentQuestion)">查看详情</el-button>
+        <!-- 移除了在"ongoing"状态下永远为假的"finished"条件判断 -->
       </div>
     
       <!-- 各种题型组件 -->
       <div class="answer-area">
         <!-- 单选题 -->
         <SingleChoice v-if="currentQuestion.type === QuestionType.Single"
-          :question="currentQuestion" :value="userAnswers[currentQuestion.id] || ''"
+          :question="currentQuestion" :value="store.answers[currentQuestion.id] || ''"
           :onChange="handleAnswerSubmit" />
         
         <!-- 判断题 -->
         <JudgeQuestion v-if="currentQuestion.type === QuestionType.Judge"
-          :question="currentQuestion" :value="userAnswers[currentQuestion.id] || ''"
+          :question="currentQuestion" :value="store.answers[currentQuestion.id] || ''"
           :onChange="handleAnswerSubmit" />
         
         <!-- 填空题 -->
@@ -433,13 +450,13 @@ onUnmounted(() => {
         <!-- 编程题 -->
         <ProgramQuestion v-if="currentQuestion.type === QuestionType.Program"
           :question="currentQuestion" 
-          :value="userAnswers[currentQuestion.id] || ''" 
+          :value="store.answers[currentQuestion.id] || ''"
           :onChange="handleAnswerSubmit" />
         
         <!-- 简答题 -->
         <ShortAnswerQuestion v-if="currentQuestion.type === QuestionType.ShortAnswer"
           :question="currentQuestion" 
-          :value="userAnswers[currentQuestion.id] || ''" 
+          :value="store.answers[currentQuestion.id] || ''"
           :onChange="handleAnswerSubmit" />
       </div>
 
@@ -617,7 +634,7 @@ onUnmounted(() => {
                     :key="idx"
                     :class="[
                       'option-item',
-                      userAnswers[question.id] === String.fromCharCode(65 + idx) ? 'user-selected' : '',
+                      store.answers[question.id] === String.fromCharCode(65 + idx) ? 'user-selected' : '',
                       question.correctAnswer === String.fromCharCode(65 + idx) ? 'correct-answer' : ''
                     ]"
                   >
@@ -630,7 +647,7 @@ onUnmounted(() => {
                   <div 
                     :class="[
                       'option-item',
-                      userAnswers[question.id] === 'true' ? 'user-selected' : '',
+                      store.answers[question.id] === 'true' ? 'user-selected' : '',
                       question.correctAnswer === 'true' ? 'correct-answer' : ''
                     ]"
                   >
@@ -639,7 +656,7 @@ onUnmounted(() => {
                   <div 
                     :class="[
                       'option-item',
-                      userAnswers[question.id] === 'false' ? 'user-selected' : '',
+                      store.answers[question.id] === 'false' ? 'user-selected' : '',
                       question.correctAnswer === 'false' ? 'correct-answer' : ''
                     ]"
                   >
@@ -652,7 +669,7 @@ onUnmounted(() => {
                   <div v-for="(answer, idx) in question.answers" :key="idx" class="fill-review">
                     <div class="fill-label">空 {{ idx + 1 }}:</div>
                     <div class="fill-content">
-                      <div class="user-answer">你的答案: {{ userAnswers[question.id]?.[idx] || '未作答' }}</div>
+                      <div class="user-answer">你的答案: {{ store.answers[question.id]?.[idx] || '未作答' }}</div>
                       <div class="correct-answer">正确答案: {{ answer }}</div>
                     </div>
                   </div>
@@ -662,7 +679,7 @@ onUnmounted(() => {
                 <template v-else>
                   <div class="other-answer">
                     <div>你的答案:</div>
-                    <pre>{{ userAnswers[question.id] || '未作答' }}</pre>
+                    <pre>{{ store.answers[question.id] || '未作答' }}</pre>
                     <div>参考答案:</div>
                     <pre v-if="question.type === QuestionType.Program">{{ question.sampleOutput }}</pre>
                     <pre v-else-if="question.type === QuestionType.ShortAnswer">{{ question.referenceAnswer }}</pre>
@@ -847,4 +864,4 @@ onUnmounted(() => {
   margin-top: 20px;
   text-align: center;
 }
-</style> 
+</style>
