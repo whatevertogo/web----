@@ -6,11 +6,19 @@ public class QuestionRepository : IQuestionRepository
 {
     private readonly AppDbContext _context;
 
+    /// <summary>
+    /// 依赖注入AppDbContext
+    /// </summary>
+    /// <param name="context">数据库上下文实例</param>
     public QuestionRepository(AppDbContext context)
     {
         _context = context;
     }
 
+    /// <summary>
+    /// 异步获取所有问题
+    /// </summary>
+    /// <returns></returns>
     public async Task<List<Question>> GetAllQuestionsAsync()
     {
         return await _context.Questions.ToListAsync();
