@@ -16,8 +16,8 @@ namespace QuestionBankApi.Data;
 
 /// <summary>
 /// 应用程序的数据库上下文，管理数据库连接和实体映射
-/// </summary>
 public class AppDbContext : DbContext
+/// </summary>
 {
     /// <summary>
     /// 构造函数，传入数据库上下文配置参数

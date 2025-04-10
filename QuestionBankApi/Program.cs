@@ -24,7 +24,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowVueApp",
         builder => builder
-            .WithOrigins("http://localhost:5173") // Vue 开发服务器的默认地址
+            .WithOrigins("https://localhost:5173") // Vue开发服务器的HTTPS地址
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials());
@@ -37,9 +37,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 注册数据库上下文，使用SQL Server，连接字符串来自配置文件
+// 注册数据库上下文，使用mySQL，连接字符串来自配置文件
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
 
 // 注入题目服务
 builder.Services.AddScoped<IQuestionService, QuestionService>();
