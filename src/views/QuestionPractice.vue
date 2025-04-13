@@ -81,7 +81,7 @@ const questionStats = computed(() => {
     [QuestionType.Program]: { total: 0, answered: 0, score: 0 },
     [QuestionType.ShortAnswer]: { total: 0, answered: 0, score: 0 }
   }
-  
+
   examQuestions.value.forEach(q => {
     stats[q.type].total++
     stats[q.type].score += 10
@@ -105,7 +105,7 @@ watch(currentQuestion, (newQuestion) => {
 // 处理填空答案变化
 const handleFillAnswer = (index: number) => {
   if (!currentQuestion.value) return
-  
+
   const questionId = currentQuestion.value.id
   let answerArr = store.answers[questionId]
   if (!Array.isArray(answerArr)) {
@@ -130,7 +130,7 @@ const startExam = async () => {
     console.log("开始加载题目...")
     await loadQuestions()
     console.log("题目加载结果:", examQuestions.value)
-    
+
     // 只有当成功加载题目后才设置状态
     if (examQuestions.value.length > 0) {
       examStatus.value = 'ongoing'
@@ -148,12 +148,12 @@ const startExam = async () => {
 const startTimer = () => {
   const startTime = Date.now()
   const duration = examTime.value * 60 * 1000 // 转换为毫秒
-  
+
   timer.value = setInterval(() => {
     const elapsed = Date.now() - startTime
     const remaining = Math.max(0, duration - elapsed)
     remainingTime.value = Math.floor(remaining / 1000)
-    
+
     if (remaining <= 0) {
       finishExam()
     }
@@ -166,17 +166,17 @@ const loadQuestions = async () => {
     // 重置现有数据
     examQuestions.value = []
     currentQuestion.value = null
-    
+
     // 加载新数据
     const questions = await questionService.getQuestions()
     console.log('获取到题目:', questions)
-    
+
     // 检查数据格式
     if (!Array.isArray(questions) || questions.length === 0) {
       console.warn('题目数据格式不正确或为空')
       return
     }
-    
+
     // 确保每个题目都有完整的数据
     examQuestions.value = questions.map(q => ({
       ...q,
@@ -188,7 +188,7 @@ const loadQuestions = async () => {
       sampleOutput: q.sampleOutput || '',
       referenceAnswer: q.referenceAnswer || ''
     }))
-    
+
     currentQuestion.value = examQuestions.value[0]
   } catch (error) {
     console.error('题目加载出错:', error)
@@ -199,9 +199,9 @@ const loadQuestions = async () => {
 // 处理答案提交
 const handleAnswerSubmit = (value: any) => {
   if (!currentQuestion.value) return
-  
+
   store.setAnswer(currentQuestion.value.id, value)
-  
+
   // 自动切换到下一题
   const currentIndex = examQuestions.value.findIndex(q => q.id === currentQuestion.value.id)
   if (currentIndex < examQuestions.value.length - 1) {
@@ -220,14 +220,14 @@ const switchQuestion = (index: number) => {
 const calculateScore = () => {
   let totalScore = 0
   let correctCount = 0
-  
+
   examQuestions.value.forEach(question => {
     const userAnswer = store.answers[question.id]
-    
+
     // 如果用户没有回答，则不计分
-    if (userAnswer === undefined || userAnswer === null || 
+    if (userAnswer === undefined || userAnswer === null ||
         (Array.isArray(userAnswer) && userAnswer.every(a => !a))) return
-    
+
     let isCorrect = false
       // 根据题型比较答案
     switch (question.type) {
@@ -264,18 +264,18 @@ const calculateScore = () => {
         // 实际应用中可能需要更复杂的评分逻辑
         if (question.keywords && Array.isArray(question.keywords)) {
           const userAns = (userAnswer || '').toString().toLowerCase();
-          isCorrect = question.keywords.some(keyword => 
+          isCorrect = question.keywords.some(keyword =>
             userAns.includes(keyword.toLowerCase())
           );
         }
         break;
     }
-    
+
     // 更新得分统计
     if (isCorrect) {
       totalScore += 10 // 假设每题10分
       correctCount++
-      
+
       // 记录正确答案，用于结果展示
       questionResults.value[question.id] = {
         isCorrect: true,
@@ -288,10 +288,10 @@ const calculateScore = () => {
       }
     }
   });
-  
+
   // 更新总分和正确率
   examScore.value = totalScore
-  examCorrectRate.value = examQuestions.value.length ? 
+  examCorrectRate.value = examQuestions.value.length ?
     (correctCount / examQuestions.value.length * 100).toFixed(1) + '%' : '0%'
 }
 
@@ -300,9 +300,9 @@ const finishExam = () => {
   if (timer.value) {
     clearInterval(timer.value)
   }
-  
+
   examStatus.value = 'finished'
-  
+
   // 计算结果
   calculateResults()
 }
@@ -313,17 +313,17 @@ const calculateResults = () => {
   let correct = 0
   let incorrect = 0
   let skipped = 0
-  
+
   examQuestions.value.forEach(question => {
     const userAnswer = store.answers[question.id]
-    
+
     if (!userAnswer) {
       skipped++
       return
     }
-    
+
     let isCorrect = false
-    
+
     switch (question.type) {
       case QuestionType.Single:
         if (typeof userAnswer === 'string' && question.correctAnswer) {
@@ -338,8 +338,8 @@ const calculateResults = () => {
         isCorrect = userAnswer === question.correctAnswer
         break
       case QuestionType.Fill:
-        isCorrect = Array.isArray(userAnswer) && 
-          userAnswer.every((ans, idx) => 
+        isCorrect = Array.isArray(userAnswer) &&
+          userAnswer.every((ans, idx) =>
             ans.trim().toLowerCase() === question.answers[idx].trim().toLowerCase())
         break
       case QuestionType.Program:
@@ -348,16 +348,16 @@ const calculateResults = () => {
         isCorrect = false
         break
     }
-    
+
     if (isCorrect) {
       correct++
     } else {
       incorrect++
     }
   })
-  
+
   const timeUsed = examTime.value * 60 - remainingTime.value
-  
+
   examResults.value = {
     totalQuestions: total,
     correctAnswers: correct,
@@ -405,11 +405,11 @@ onUnmounted(() => {
           <el-tag v-if="examStatus === 'ready'" type="info">准备开始</el-tag>
           <el-tag v-else-if="examStatus === 'ongoing'" type="success">考试中</el-tag>
           <el-tag v-else-if="examStatus === 'finished'" type="warning">已完成</el-tag>
-          
+
           <el-tag v-if="examStatus !== 'ready'" type="info" class="ml-2">
             第 {{ currentQuestionIndex + 1 }}/{{ examQuestions.length }} 题
           </el-tag>
-          
+
           <el-tag v-if="examStatus === 'ongoing'" type="danger" class="ml-2">
             剩余时间: {{ formattedTime.hours }}:{{ formattedTime.minutes }}:{{ formattedTime.seconds }}
           </el-tag>
@@ -428,54 +428,54 @@ onUnmounted(() => {
         <p>{{ currentQuestion.question }}</p>
         <!-- 移除了在"ongoing"状态下永远为假的"finished"条件判断 -->
       </div>
-    
+
       <!-- 各种题型组件 -->
       <div class="answer-area">
         <!-- 单选题 -->
         <SingleChoice v-if="currentQuestion.type === QuestionType.Single"
           :question="currentQuestion" :value="store.answers[currentQuestion.id] || ''"
           :onChange="handleAnswerSubmit" />
-        
+
         <!-- 判断题 -->
         <JudgeQuestion v-if="currentQuestion.type === QuestionType.Judge"
           :question="currentQuestion" :value="store.answers[currentQuestion.id] || ''"
           :onChange="handleAnswerSubmit" />
-        
+
         <!-- 填空题 -->
         <FillBlank v-if="currentQuestion.type === QuestionType.Fill"
-          :question="currentQuestion" 
-          :answers="fillAnswers" 
+          :question="currentQuestion"
+          :answers="fillAnswers"
           :onAnswerChange="handleFillAnswer" />
-        
+
         <!-- 编程题 -->
         <ProgramQuestion v-if="currentQuestion.type === QuestionType.Program"
-          :question="currentQuestion" 
+          :question="currentQuestion"
           :value="store.answers[currentQuestion.id] || ''"
           :onChange="handleAnswerSubmit" />
-        
+
         <!-- 简答题 -->
         <ShortAnswerQuestion v-if="currentQuestion.type === QuestionType.ShortAnswer"
-          :question="currentQuestion" 
+          :question="currentQuestion"
           :value="store.answers[currentQuestion.id] || ''"
           :onChange="handleAnswerSubmit" />
       </div>
 
       <!-- 导航按钮 -->
       <div class="nav-buttons">
-        <el-button v-if="currentQuestionIndex > 0" 
+        <el-button v-if="currentQuestionIndex > 0"
           @click="switchQuestion(currentQuestionIndex - 1)">上一题</el-button>
-        <el-button v-if="currentQuestionIndex < examQuestions.length - 1" 
+        <el-button v-if="currentQuestionIndex < examQuestions.length - 1"
           @click="switchQuestion(currentQuestionIndex + 1)">下一题</el-button>
         <el-button type="primary" @click="finishExam">提交答案</el-button>
         <el-button @click="startExam">重新开始</el-button>
       </div>
     </div>
-    
+
     <!-- 未加载到题目时显示 -->
     <div v-if="examStatus === 'ongoing' && !currentQuestion" class="no-questions">
       <h3>加载题目中...</h3>
     </div>
-    
+
     <!-- 题目详情对话框 -->
     <el-dialog
       v-model="detailDialogVisible"
@@ -489,10 +489,10 @@ onUnmounted(() => {
         <el-descriptions-item label="题目内容">
           {{ detailQuestion.question }}
         </el-descriptions-item>
-        
+
         <!-- 单选题特有字段 -->
         <template v-if="detailQuestion.type === QuestionType.Single">
-          <el-descriptions-item 
+          <el-descriptions-item
             v-for="(option, index) in detailQuestion.options"
             :key="index"
             :label="`选项${String.fromCharCode(65 + index)}`"
@@ -507,13 +507,13 @@ onUnmounted(() => {
         <!-- 判断题特有字段 -->
         <template v-else-if="detailQuestion.type === QuestionType.Judge">
           <el-descriptions-item label="正确答案">
-            {{ detailQuestion.correctAnswer === 'true' ? '正确' : '错误' }}
+            {{ detailQuestion.correctAnswer }}
           </el-descriptions-item>
         </template>
 
         <!-- 填空题特有字段 -->
         <template v-else-if="detailQuestion.type === QuestionType.Fill">
-          <el-descriptions-item 
+          <el-descriptions-item
             v-for="(answer, index) in detailQuestion.answers"
             :key="index"
             :label="`填空${index + 1}答案`"
@@ -553,7 +553,7 @@ onUnmounted(() => {
     <!-- 考试完成状态 -->
     <div v-if="examStatus === 'finished'" class="exam-finished">
       <h3>练习完成</h3>
-      
+
       <!-- 结果统计 -->
       <el-card class="result-card">
         <template #header>
@@ -561,7 +561,7 @@ onUnmounted(() => {
             <h4>练习结果</h4>
           </div>
         </template>
-        
+
         <el-row :gutter="20">
           <el-col :span="8">
             <div class="result-item">
@@ -582,7 +582,7 @@ onUnmounted(() => {
             </div>
           </el-col>
         </el-row>
-        
+
         <el-row :gutter="20" class="mt-20">
           <el-col :span="8">
             <div class="result-item">
@@ -604,7 +604,7 @@ onUnmounted(() => {
           </el-col>
         </el-row>
       </el-card>
-      
+
       <!-- 题目回顾 -->
       <div class="review-section">
         <div class="review-header">
@@ -615,10 +615,10 @@ onUnmounted(() => {
             inactive-text="隐藏解析"
           />
         </div>
-        
+
         <el-collapse>
-          <el-collapse-item 
-            v-for="(question, index) in examQuestions" 
+          <el-collapse-item
+            v-for="(question, index) in examQuestions"
             :key="question.id"
             :title="`第 ${index + 1} 题: ${question.question.substring(0, 30)}...`"
           >
@@ -626,11 +626,11 @@ onUnmounted(() => {
               <div class="question-content">
                 <h5>{{ typeMap[question.type] }}</h5>
                 <p>{{ question.question }}</p>
-                
+
                 <!-- 单选题 -->
                 <template v-if="question.type === QuestionType.Single">
-                  <div 
-                    v-for="(option, idx) in question.options" 
+                  <div
+                    v-for="(option, idx) in question.options"
                     :key="idx"
                     :class="[
                       'option-item',
@@ -641,29 +641,29 @@ onUnmounted(() => {
                     {{ String.fromCharCode(65 + idx) }}. {{ option }}
                   </div>
                 </template>
-                
+
                 <!-- 判断题 -->
                 <template v-else-if="question.type === QuestionType.Judge">
-                  <div 
+                  <div
                     :class="[
                       'option-item',
-                      store.answers[question.id] === 'true' ? 'user-selected' : '',
-                      question.correctAnswer === 'true' ? 'correct-answer' : ''
+                      store.answers[question.id] === '正确' ? 'user-selected' : '',
+                      question.correctAnswer === '正确' ? 'correct-answer' : ''
                     ]"
                   >
                     正确
                   </div>
-                  <div 
+                  <div
                     :class="[
                       'option-item',
-                      store.answers[question.id] === 'false' ? 'user-selected' : '',
-                      question.correctAnswer === 'false' ? 'correct-answer' : ''
+                      store.answers[question.id] === '错误' ? 'user-selected' : '',
+                      question.correctAnswer === '错误' ? 'correct-answer' : ''
                     ]"
                   >
                     错误
                   </div>
                 </template>
-                
+
                 <!-- 填空题 -->
                 <template v-else-if="question.type === QuestionType.Fill">
                   <div v-for="(answer, idx) in question.answers" :key="idx" class="fill-review">
@@ -674,7 +674,7 @@ onUnmounted(() => {
                     </div>
                   </div>
                 </template>
-                
+
                 <!-- 其他题型 -->
                 <template v-else>
                   <div class="other-answer">
@@ -685,7 +685,7 @@ onUnmounted(() => {
                     <pre v-else-if="question.type === QuestionType.ShortAnswer">{{ question.referenceAnswer }}</pre>
                   </div>
                 </template>
-                
+
                 <!-- 解析 -->
                 <div v-if="showExplanation" class="explanation">
                   <h5>解析:</h5>
@@ -696,7 +696,7 @@ onUnmounted(() => {
           </el-collapse-item>
         </el-collapse>
       </div>
-      
+
       <div class="action-buttons">
         <el-button type="primary" @click="startExam">重新开始</el-button>
       </div>

@@ -42,7 +42,7 @@ export interface SingleQuestionForm extends BaseQuestion {
 // 判断题表单接口
 export interface JudgeQuestionForm extends BaseQuestion {
   type: QuestionType.Judge;
-  correctAnswer: 'true' | 'false';
+  correctAnswer: '正确' | '错误';
 }
 
 // 填空题表单接口
@@ -56,6 +56,7 @@ export interface ProgramQuestionForm extends BaseQuestion {
   type: QuestionType.Program;
   sampleInput: string;
   sampleOutput: string;
+  referenceAnswer: string;
 }
 
 // 简答题表单接口
@@ -65,11 +66,11 @@ export interface ShortAnswerQuestionForm extends BaseQuestion {
 }
 
 // 题目 DTO 类型联合
-export type QuestionForm = 
-  | SingleQuestionForm 
-  | JudgeQuestionForm 
-  | FillQuestionForm 
-  | ProgramQuestionForm 
+export type QuestionForm =
+  | SingleQuestionForm
+  | JudgeQuestionForm
+  | FillQuestionForm
+  | ProgramQuestionForm
   | ShortAnswerQuestionForm;
 
 // 表格数据接口

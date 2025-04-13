@@ -106,7 +106,7 @@ if (instance) {
             <template v-if="userStore.isAdmin()">
               <el-menu-item index="1">
                 <el-icon><Edit /></el-icon>
-                <span>录入试题</span>
+                <span>新增试题</span>
               </el-menu-item>
               <el-menu-item index="2">
                 <el-icon><List /></el-icon>

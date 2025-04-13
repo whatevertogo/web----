@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps<{
   question: any
@@ -9,6 +9,16 @@ const props = defineProps<{
 
 const answer = ref(props.value)
 
+// 监听 value 变化
+watch(() => props.value, (newValue) => {
+  answer.value = newValue
+})
+
+// 监听 question 变化，确保切换题目时重置答案
+watch(() => props.question, () => {
+  answer.value = props.value
+})
+
 const handleChange = (value: string) => {
   answer.value = value
   props.onChange(value)
@@ -17,7 +27,7 @@ const handleChange = (value: string) => {
 
 <template>
   <div class="single-choice">
-    <el-radio-group 
+    <el-radio-group
       v-model="answer"
       @change="handleChange"
     >
@@ -30,4 +40,4 @@ const handleChange = (value: string) => {
       </el-radio>
     </el-radio-group>
   </div>
-</template> 
+</template>

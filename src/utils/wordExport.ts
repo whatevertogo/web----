@@ -10,14 +10,14 @@ export const exportToWord = async (questions: any[], typeMap?: Record<string, st
   try {
     // 生成 HTML 内容
     const htmlContent = generateHtmlContent(questions, typeMap)
-    
+
     // 将 HTML 转换为 Blob
     const blob = new Blob([htmlContent], { type: 'application/msword' })
-    
+
     // 下载文件
     const fileName = `题库导出_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.doc`
     saveAs(blob, fileName)
-    
+
     return true
   } catch (error) {
     console.error('Word导出失败:', error)
@@ -104,18 +104,18 @@ const formatSingleChoice = (question: any): string => {
   if (!question.options || !Array.isArray(question.options)) {
     return '<div class="answer">选项数据无效</div>'
   }
-  
+
   let html = '<div class="options">'
   question.options.forEach((opt: string, idx: number) => {
     html += `<div>${String.fromCharCode(65 + idx)}. ${escapeHtml(toString(opt))}</div>`
   })
   html += '</div>'
   html += `<div class="answer">正确答案：${escapeHtml(toString(question.correctAnswer || '未设置'))}</div>`
-  
+
   if (question.analysis) {
     html += `<div class="analysis">解析：${escapeHtml(toString(question.analysis))}</div>`
   }
-  
+
   return html
 }
 
@@ -124,12 +124,12 @@ const formatJudge = (question: any): string => {
   html += '<div>A. 正确</div>'
   html += '<div>B. 错误</div>'
   html += '</div>'
-  html += `<div class="answer">正确答案：${question.correctAnswer === 'true' ? '正确' : '错误'}</div>`
-  
+  html += `<div class="answer">正确答案：${question.correctAnswer}</div>`
+
   if (question.analysis) {
     html += `<div class="analysis">解析：${escapeHtml(toString(question.analysis))}</div>`
   }
-  
+
   return html
 }
 
@@ -137,17 +137,17 @@ const formatFill = (question: any): string => {
   if (!question.answers || !Array.isArray(question.answers)) {
     return '<div class="answer">答案数据无效</div>'
   }
-  
+
   let html = '<div class="answer">答案：'
   question.answers.forEach((ans: string, idx: number) => {
     html += `<div>空${idx + 1}：${escapeHtml(toString(ans))}</div>`
   })
   html += '</div>'
-  
+
   if (question.analysis) {
     html += `<div class="analysis">解析：${escapeHtml(toString(question.analysis))}</div>`
   }
-  
+
   return html
 }
 
@@ -155,20 +155,20 @@ const formatProgram = (question: any): string => {
   let html = ''
   html += `<div class="answer">示例输入：<pre>${escapeHtml(toString(question.sampleInput || '无'))}</pre></div>`
   html += `<div class="answer">示例输出：<pre>${escapeHtml(toString(question.sampleOutput || '无'))}</pre></div>`
-  
+
   if (question.analysis) {
     html += `<div class="analysis">解析：${escapeHtml(toString(question.analysis))}</div>`
   }
-  
+
   return html
 }
 
 const formatShortAnswer = (question: any): string => {
   let html = `<div class="answer">参考答案：<div>${escapeHtml(toString(question.referenceAnswer || '无'))}</div></div>`
-  
+
   if (question.analysis) {
     html += `<div class="analysis">解析：${escapeHtml(toString(question.analysis))}</div>`
   }
-  
+
   return html
 }

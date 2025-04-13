@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 import { ElMessage } from 'element-plus'
 
@@ -41,7 +41,9 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
-  
+
+  // 检查权限
+
   if (to.meta.requiresAdmin && !userStore.isAdmin()) {
     ElMessage.warning('需要管理员权限')
     next('/practice')
@@ -58,8 +60,7 @@ router.beforeEach((to, from, next) => {
 })
 
 router.afterEach((to, from) => {
-  if (from.name === 'QuestionManage' && to.name !== 'QuestionManage') {
-  }
+  // Empty implementation, kept for future use
 })
 
 export default router

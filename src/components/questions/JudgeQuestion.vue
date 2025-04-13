@@ -13,13 +13,19 @@ watch(() => props.value, (newValue) => {
   selectedAnswer.value = newValue
 })
 
+// 监听 question 变化，确保切换题目时重置答案
+watch(() => props.question, () => {
+  selectedAnswer.value = props.value
+})
+
 const handleChange = (value: string) => {
   selectedAnswer.value = value
   props.onChange(value)
 }
 </script>
 
-<template>  <div class="judge-question">
+<template>
+  <div class="judge-question">
     <el-radio-group v-model="selectedAnswer" @change="handleChange">
       <el-radio value="正确">正确</el-radio>
       <el-radio value="错误">错误</el-radio>
@@ -34,4 +40,4 @@ const handleChange = (value: string) => {
 .question-text {
   margin-bottom: 10px;
 }
-</style> 
+</style>

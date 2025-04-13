@@ -11,8 +11,9 @@ import config from '../config/index'
 export const api = {
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
     try {
+      await new Promise(resolve => setTimeout(resolve, 300))
       const queryParams = params ? new URLSearchParams(params).toString() : '';
-      const url = queryParams ? `/api${endpoint}?${queryParams}` : `/api${endpoint}`;
+      const url = queryParams ? `${config.apiBaseUrl}${endpoint}?${queryParams}` : `${config.apiBaseUrl}${endpoint}`;
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -20,20 +21,55 @@ export const api = {
         }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // 204 No Content
+      if (response.status === 204) {
+        return {} as T
       }
 
-      const result = await response.json();      if (!result.success) {
-        throw new Error(result.message || '请求失败');
+      // 检查响应是否为空
+      const text = await response.text();
+      console.log('原始响应文本:', text);
+      if (!text || text.trim() === '') {
+        console.warn('API返回空响应:', endpoint);
+        return {} as T;
       }
-      return result;
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw new Error('请求失败: ' + (error as Error).message);
+
+      // 尝试解析JSON
+      let result: any;
+      try {
+        result = JSON.parse(text);
+      } catch (parseError) {
+        console.error('JSON解析失败:', text, parseError);
+        throw new Error('服务器返回的数据格式无效');
+      }
+
+      // 处理不同的响应格式
+      if (Array.isArray(result)) {
+        // 如果直接返回数组，直接使用
+        return result as T;
+      } else if (result && typeof result === 'object') {
+        // 如果是标准的API响应格式
+        if ('success' in result) {
+          if (!result.success) {
+            throw new Error(result.message || result.error || '操作失败');
+          }
+          return result.data as T;
+        }
+        // 如果是其他对象格式，直接返回
+        return result as T;
+      }
+
+      if (!response.ok) {
+        throw new Error(`请求失败(${response.status})`);
+      }
+
+      throw new Error('无法识别的响应格式');
+    } catch (error: any) {
+      console.error('GET请求失败:', error);
+      throw new Error(error.message || '网络请求失败');
     }
   },
-  
+
   async post<T>(endpoint: string, data: any): Promise<T> {
     try {
       await new Promise(resolve => setTimeout(resolve, 300))
@@ -50,17 +86,43 @@ export const api = {
         return {} as T
       }
 
-      const result: ApiResponse<T> = await response.json()
+      // 检查响应是否为空
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        console.warn('API返回空响应:', endpoint);
+        return {} as T;
+      }
+
+      // 尝试解析JSON
+      let result: any;
+      try {
+        result = JSON.parse(text);
+      } catch (parseError) {
+        console.error('JSON解析失败:', text, parseError);
+        throw new Error('服务器返回的数据格式无效');
+      }
+
+      // 处理不同的响应格式
+      if (Array.isArray(result)) {
+        // 如果直接返回数组，直接使用
+        return result as T;
+      } else if (result && typeof result === 'object') {
+        // 如果是标准的API响应格式
+        if ('success' in result) {
+          if (!result.success) {
+            throw new Error(result.message || result.error || '操作失败');
+          }
+          return result.data as T;
+        }
+        // 如果是其他对象格式，直接返回
+        return result as T;
+      }
 
       if (!response.ok) {
-        throw new Error(result.message || result.error || `请求失败(${response.status})`)
+        throw new Error(`请求失败(${response.status})`);
       }
 
-      if (!result.success) {
-        throw new Error(result.message || result.error || '操作失败')
-      }
-
-      return result.data as T
+      throw new Error('无法识别的响应格式');
     } catch (error: any) {
       console.error('POST请求失败:', error)
       throw new Error(error.message || '网络请求失败')
@@ -82,17 +144,43 @@ export const api = {
         return {} as T
       }
 
-      const result: ApiResponse<T> = await response.json()
-      
+      // 检查响应是否为空
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        console.warn('API返回空响应:', endpoint);
+        return {} as T;
+      }
+
+      // 尝试解析JSON
+      let result: any;
+      try {
+        result = JSON.parse(text);
+      } catch (parseError) {
+        console.error('JSON解析失败:', text, parseError);
+        throw new Error('服务器返回的数据格式无效');
+      }
+
+      // 处理不同的响应格式
+      if (Array.isArray(result)) {
+        // 如果直接返回数组，直接使用
+        return result as T;
+      } else if (result && typeof result === 'object') {
+        // 如果是标准的API响应格式
+        if ('success' in result) {
+          if (!result.success) {
+            throw new Error(result.message || result.error || '操作失败');
+          }
+          return result.data as T;
+        }
+        // 如果是其他对象格式，直接返回
+        return result as T;
+      }
+
       if (!response.ok) {
-        throw new Error(result.message || result.error || `请求失败(${response.status})`)
+        throw new Error(`请求失败(${response.status})`);
       }
 
-      if (!result.success) {
-        throw new Error(result.message || result.error || '操作失败')
-      }
-
-      return result.data as T
+      throw new Error('无法识别的响应格式');
     } catch (error: any) {
       console.error('PUT请求失败:', error)
       throw new Error(error.message || '网络请求失败')
@@ -113,17 +201,43 @@ export const api = {
         return {} as T
       }
 
-      const result: ApiResponse<T> = await response.json()
-      
+      // 检查响应是否为空
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        console.warn('API返回空响应:', endpoint);
+        return {} as T;
+      }
+
+      // 尝试解析JSON
+      let result: any;
+      try {
+        result = JSON.parse(text);
+      } catch (parseError) {
+        console.error('JSON解析失败:', text, parseError);
+        throw new Error('服务器返回的数据格式无效');
+      }
+
+      // 处理不同的响应格式
+      if (Array.isArray(result)) {
+        // 如果直接返回数组，直接使用
+        return result as T;
+      } else if (result && typeof result === 'object') {
+        // 如果是标准的API响应格式
+        if ('success' in result) {
+          if (!result.success) {
+            throw new Error(result.message || result.error || '操作失败');
+          }
+          return result.data as T;
+        }
+        // 如果是其他对象格式，直接返回
+        return result as T;
+      }
+
       if (!response.ok) {
-        throw new Error(result.message || result.error || `请求失败(${response.status})`)
+        throw new Error(`请求失败(${response.status})`);
       }
 
-      if (!result.success) {
-        throw new Error(result.message || result.error || '操作失败')
-      }
-
-      return result.data as T
+      throw new Error('无法识别的响应格式');
     } catch (error: any) {
       console.error('DELETE请求失败:', error)
       throw new Error(error.message || '网络请求失败')

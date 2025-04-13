@@ -49,8 +49,9 @@ public class AppDbContext : DbContext
             new Question
             {
                 Id = 2,
-                Type = QuestionType.Judge,
+                Type = QuestionType.Judge, // 确保这里是枚举值 1
                 Content = "太阳是恒星。",
+                OptionsJson = "[\"正确\", \"错误\"]", // 添加选项
                 AnswersJson = "[\"正确\"]",
                 Analysis = "太阳是一颗恒星。",
                 Difficulty = 1,

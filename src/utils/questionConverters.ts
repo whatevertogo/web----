@@ -1,7 +1,6 @@
 import { QuestionType } from '@/types/question'
 import type { TableQuestion, ApiQuestion } from '@/types/question'
 import { api } from '@/services/api'
-import type { ApiResponse } from '@/types/api'
 import { convertApiQuestion } from '@/services/questionService'
 
 /**
@@ -31,7 +30,12 @@ export const questionTypeConverters = {
 
     // 判断题特殊处理
     if (question.type === QuestionType.Judge) {
-      apiData.answersJson = JSON.stringify([question.correctAnswer])
+      // 确保判断题答案格式为“正确”或“错误”
+      let correctAnswer = question.correctAnswer;
+      if (correctAnswer === 'true') correctAnswer = '正确';
+      if (correctAnswer === 'false') correctAnswer = '错误';
+
+      apiData.answersJson = JSON.stringify([correctAnswer])
       apiData.optionsJson = JSON.stringify(["正确", "错误"])
     }
 
@@ -50,16 +54,44 @@ export const questionTypeConverters = {
  * 类型安全的题目API
  */
 export const typeSafeQuestionApi = {  async getQuestion(id: number): Promise<TableQuestion> {
-    const response = await api.get<ApiResponse<ApiQuestion>>(`/questions/${id}`)
-    if (!response.data) {
-      throw new Error('获取题目失败：没有返回数据')
+    try {
+      const response = await api.get<ApiQuestion>(`/questions/${id}`)
+
+      // 如果是对象且有所需属性
+      if (response && typeof response === 'object') {
+        return questionTypeConverters.fromApiFormat(response)
+      }
+
+      throw new Error('获取题目失败：响应格式异常')
+    } catch (error: any) {
+      console.error('获取题目失败:', error)
+      throw new Error(`获取题目失败: ${error.message || '未知错误'}`)
     }
-    return questionTypeConverters.fromApiFormat(response.data)
   },
 
   async updateQuestion(question: TableQuestion): Promise<boolean> {
-    const apiData = questionTypeConverters.toApiFormat(question)
-    const response = await api.put<ApiResponse<boolean>>(`/questions/${question.id}`, apiData)
-    return response.success || false
+    try {
+      const apiData = questionTypeConverters.toApiFormat(question)
+      const response = await api.put<boolean>('/questions', apiData)
+
+      // 如果是204 No Content响应
+      if (response && Object.keys(response).length === 0) {
+        return true
+      }
+
+      // 如果是对象且有 success 属性
+      // 使用类型断言来确保 response 不是 null
+      if (response && typeof response === 'object' && response !== null) {
+        const responseObj = response as Record<string, unknown>;
+        if ('success' in responseObj) {
+          return Boolean(responseObj.success);
+        }
+      }
+
+      return false
+    } catch (error: any) {
+      console.error('更新题目失败:', error)
+      throw new Error(`更新题目失败: ${error.message || '未知错误'}`)
+    }
   }
 }

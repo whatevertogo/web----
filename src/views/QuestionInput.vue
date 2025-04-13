@@ -26,7 +26,7 @@ const singleForm = reactive<SingleQuestionForm>({
 const judgeForm = reactive<JudgeQuestionForm>({
   type: QuestionType.Judge,
   question: '',
-  correctAnswer: 'true',
+  correctAnswer: '正确',
   analysis: ''
 })
 
@@ -42,6 +42,7 @@ const programForm = reactive<ProgramQuestionForm>({
   question: '',
   sampleInput: '',
   sampleOutput: '',
+  referenceAnswer: '',
   analysis: ''
 })
 
@@ -58,7 +59,7 @@ const addOption = () => {
   }
 }
 
-const removeOption = (index) => {
+const removeOption = (index: number) => {
   if (singleForm.options.length > 2) {
     singleForm.options.splice(index, 1)
   }
@@ -70,7 +71,7 @@ const addFillBlank = () => {
   }
 }
 
-const removeFillBlank = (index) => {
+const removeFillBlank = (index: number) => {
   if (fillForm.answers.length > 1) {
     fillForm.answers.splice(index, 1)
   }
@@ -91,16 +92,20 @@ const rules = {
     question: [{ required: true, message: '请输入题目内容', trigger: 'blur' }],
     correctAnswer: [{ required: true, message: '请选择正确答案', trigger: 'change' }]
   },
-  // ... 其他题型的验证规则
-}
-
-// 题型映射
-const typeMap = {
-  [QuestionType.Single]: '单选题',
-  [QuestionType.Judge]: '判断题',
-  [QuestionType.Fill]: '填空题',
-  [QuestionType.Program]: '编程题',
-  [QuestionType.ShortAnswer]: '简答题'
+  fill: {
+    question: [{ required: true, message: '请输入题目内容', trigger: 'blur' }],
+    answers: [{ required: true, message: '请输入填空答案', trigger: 'blur' }]
+  },
+  program: {
+    question: [{ required: true, message: '请输入题目内容', trigger: 'blur' }],
+    sampleInput: [{ required: true, message: '请输入示例输入', trigger: 'blur' }],
+    sampleOutput: [{ required: true, message: '请输入示例输出', trigger: 'blur' }],
+    referenceAnswer: [{ required: true, message: '请输入参考答案', trigger: 'blur' }]
+  },
+  shortAnswer: {
+    question: [{ required: true, message: '请输入题目内容', trigger: 'blur' }],
+    referenceAnswer: [{ required: true, message: '请输入参考答案', trigger: 'blur' }]
+  }
 }
 
 // 表单引用
@@ -111,9 +116,9 @@ const programFormRef = ref()
 const shortAnswerFormRef = ref()
 
 const submitQuestion = async (formType: string) => {
-  let formRef
-  let formData
-  
+  let formRef: any
+  let formData: any
+
   switch (formType) {
     case 'single':
       formRef = singleFormRef.value
@@ -139,19 +144,68 @@ const submitQuestion = async (formType: string) => {
 
   try {
     if (!formRef) return
-    await formRef.validate()
-    
+
+    // 表单验证
+    const valid = await formRef.validate().catch((err: any) => {
+      console.error('表单验证错误:', err)
+      return false
+    })
+
+    if (!valid) {
+      ElMessage.error('表单验证失败，请检查必填项')
+      return
+    }
+
+    // 根据题型进行额外验证
+    if (formType === 'single') {
+      // 验证单选题
+      if (!formData.options || formData.options.some((opt: string) => !opt || opt.trim() === '')) {
+        ElMessage.error('选项内容不能为空')
+        return
+      }
+      if (!formData.correctAnswer) {
+        ElMessage.error('请选择正确答案')
+        return
+      }
+    } else if (formType === 'fill') {
+      // 验证填空题
+      if (!formData.answers || formData.answers.some((ans: string) => !ans || ans.trim() === '')) {
+        ElMessage.error('填空题答案不能为空')
+        return
+      }
+    } else if (formType === 'program') {
+      // 验证编程题
+      if (!formData.sampleInput || !formData.sampleOutput) {
+        ElMessage.error('编程题需要提供示例输入和输出')
+        return
+      }
+      if (!formData.referenceAnswer) {
+        ElMessage.error('编程题需要提供参考答案')
+        return
+      }
+    } else if (formType === 'shortAnswer') {
+      // 验证简答题
+      if (!formData.referenceAnswer) {
+        ElMessage.error('简答题需要提供参考答案')
+        return
+      }
+    }
+
     // 保存到服务
-    const savedQuestion = await questionService.addQuestion(formData)
-    
-    console.log('保存的试题：', savedQuestion)
-    ElMessage.success('试题保存成功！')
-    
-    // 重置表单
-    formRef.resetFields()
-  } catch (error) {
-    console.error(error)
-    ElMessage.error('表单验证失败，请检查必填项')
+    try {
+      const savedQuestion = await questionService.addQuestion(formData)
+      console.log('保存的试题：', savedQuestion)
+      ElMessage.success('试题保存成功！')
+
+      // 重置表单
+      formRef.resetFields()
+    } catch (error: any) {
+      console.error('保存试题失败:', error)
+      ElMessage.error(`添加题目失败: ${error.message || '未知错误'}`)
+    }
+  } catch (error: any) {
+    console.error('表单处理错误:', error)
+    ElMessage.error(`表单验证失败: ${error.message || '请检查必填项'}`)
   }
 }
 </script>
@@ -166,11 +220,11 @@ const submitQuestion = async (formType: string) => {
           :rules="rules.single"
           label-width="100px"
         >
-          <el-form-item label="题目内容" required>
+          <el-form-item label="题目内容" prop="question" required>
             <el-input v-model="singleForm.question" type="textarea" :rows="3" placeholder="请输入题目内容"/>
           </el-form-item>
           <el-form-item
-            v-for="(option, index) in singleForm.options"
+            v-for="(_, index) in singleForm.options"
             :key="index"
             :label="`选项${String.fromCharCode(65 + index)}`"
             required
@@ -186,7 +240,7 @@ const submitQuestion = async (formType: string) => {
               </template>
             </el-input>
           </el-form-item>
-          <el-form-item label="正确答案" required>
+          <el-form-item label="正确答案" prop="correctAnswer" required>
             <el-select v-model="singleForm.correctAnswer" placeholder="请选择正确答案">
               <el-option
                 v-for="(_, index) in singleForm.options"
@@ -209,10 +263,10 @@ const submitQuestion = async (formType: string) => {
           :rules="rules.judge"
           label-width="100px"
         >
-          <el-form-item label="题目内容" required>
+          <el-form-item label="题目内容" prop="question" required>
             <el-input v-model="judgeForm.question" type="textarea" :rows="3" placeholder="请输入题目内容"/>
           </el-form-item>
-          <el-form-item label="正确答案" required>
+          <el-form-item label="正确答案" prop="correctAnswer" required>
             <el-radio-group v-model="judgeForm.correctAnswer">
               <el-radio value="正确">正确</el-radio>
               <el-radio value="错误">错误</el-radio>
@@ -228,15 +282,17 @@ const submitQuestion = async (formType: string) => {
         <el-form
           ref="fillFormRef"
           :model="fillForm"
+          :rules="rules.fill"
           label-width="100px"
         >
-          <el-form-item label="题目内容" required>
+          <el-form-item label="题目内容" prop="question" required>
             <el-input v-model="fillForm.question" type="textarea" :rows="3" placeholder="请输入题目内容，使用下划线'_'表示填空位置"/>
           </el-form-item>
           <el-form-item
-            v-for="(answer, index) in fillForm.answers"
+            v-for="(_, index) in fillForm.answers"
             :key="index"
             :label="`填空${index + 1}`"
+            :prop="`answers.${index}`"
             required
           >
             <el-input
@@ -264,16 +320,20 @@ const submitQuestion = async (formType: string) => {
         <el-form
           ref="programFormRef"
           :model="programForm"
+          :rules="rules.program"
           label-width="100px"
         >
-          <el-form-item label="题目内容" required>
+          <el-form-item label="题目内容" prop="question" required>
             <el-input v-model="programForm.question" type="textarea" :rows="4" placeholder="请输入题目内容、要求和限制条件"/>
           </el-form-item>
-          <el-form-item label="示例输入">
+          <el-form-item label="示例输入" prop="sampleInput" required>
             <el-input v-model="programForm.sampleInput" type="textarea" :rows="2" placeholder="请输入示例输入数据"/>
           </el-form-item>
-          <el-form-item label="示例输出">
+          <el-form-item label="示例输出" prop="sampleOutput" required>
             <el-input v-model="programForm.sampleOutput" type="textarea" :rows="2" placeholder="请输入示例输出结果"/>
+          </el-form-item>
+          <el-form-item label="参考答案" prop="referenceAnswer" required>
+            <el-input v-model="programForm.referenceAnswer" type="textarea" :rows="4" placeholder="请输入参考答案代码"/>
           </el-form-item>
           <el-form-item label="解题思路">
             <el-input v-model="programForm.analysis" type="textarea" :rows="3" placeholder="请输入解题思路和关键点"/>
@@ -285,12 +345,13 @@ const submitQuestion = async (formType: string) => {
         <el-form
           ref="shortAnswerFormRef"
           :model="shortAnswerForm"
+          :rules="rules.shortAnswer"
           label-width="100px"
         >
-          <el-form-item label="题目内容" required>
+          <el-form-item label="题目内容" prop="question" required>
             <el-input v-model="shortAnswerForm.question" type="textarea" :rows="3" placeholder="请输入题目内容"/>
           </el-form-item>
-          <el-form-item label="参考答案" required>
+          <el-form-item label="参考答案" prop="referenceAnswer" required>
             <el-input v-model="shortAnswerForm.referenceAnswer" type="textarea" :rows="4" placeholder="请输入参考答案"/>
           </el-form-item>
           <el-form-item label="答案要点">
