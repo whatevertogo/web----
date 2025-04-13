@@ -1,5 +1,5 @@
 /*
- * QuestionBankDBContext.cs
+ * QuestionBankDbContext.cs
  * ----------------
  * Entity Framework Core 的数据库上下文类。
  * 负责管理数据库连接、实体映射，定义数据库中的数据表。
@@ -17,19 +17,44 @@ namespace QuestionBankApi.Data;
 
 /// <summary>
 /// 应用程序的数据库上下文，管理数据库连接和实体映射
-public class QuestionBankDBContext : DbContext
+public class QuestionBankDbContext : DbContext
 /// </summary>
 {
     /// <summary>
     /// 构造函数，传入数据库上下文配置参数
     /// </summary>
     /// <param name="options">数据库上下文配置</param>
-    public QuestionBankDBContext(DbContextOptions<QuestionBankDBContext> options) : base(options) { }
+    public QuestionBankDbContext(DbContextOptions<QuestionBankDbContext> options) : base(options) { }
 
     /// <summary>
     /// 题目表，存储所有题目信息
     /// </summary>
     public DbSet<Question> Questions => Set<Question>();
+
+    /// <summary>
+    /// 试卷表，存储所有试卷信息
+    /// </summary>
+    public DbSet<Exam> Exams => Set<Exam>();
+
+    /// <summary>
+    /// 试卷题目关联表，存储试卷和题目的关联关系
+    /// </summary>
+    public DbSet<ExamQuestion> ExamQuestions => Set<ExamQuestion>();
+
+    /// <summary>
+    /// 试卷分配表，存储试卷分配给学生的记录
+    /// </summary>
+    public DbSet<ExamAssignment> ExamAssignments => Set<ExamAssignment>();
+
+    /// <summary>
+    /// 试卷提交表，存储学生提交的试卷记录
+    /// </summary>
+    public DbSet<ExamSubmission> ExamSubmissions => Set<ExamSubmission>();
+
+    /// <summary>
+    /// 题目答案表，存储学生提交的答案记录
+    /// </summary>
+    public DbSet<QuestionAnswer> QuestionAnswers => Set<QuestionAnswer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

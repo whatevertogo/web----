@@ -11,7 +11,7 @@ using QuestionBankApi.Data;
 
 namespace QuestionBankApi.Migrations
 {
-    [DbContext(typeof(QuestionBankDBContext))]
+    [DbContext(typeof(QuestionBankDbContext))]
     [Migration("20250410131907_InitialCreate")]
     partial class InitialCreate
     {

@@ -17,13 +17,13 @@ namespace QuestionBankApi.Services;
 /// </summary>
 public class QuestionService : IQuestionService
 {
-    private readonly QuestionBankDBContext _db;
+    private readonly QuestionBankDbContext _db;
 
     /// <summary>
     /// 构造函数，注入数据库上下文
     /// </summary>
     /// <param name="db">数据库上下文</param>
-    public QuestionService(QuestionBankDBContext db)
+    public QuestionService(QuestionBankDbContext db)
     {
         _db = db;
     }

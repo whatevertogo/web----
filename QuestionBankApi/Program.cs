@@ -6,7 +6,7 @@
  *
  * 关键功能：
  * - 配置允许Vue前端跨域访问
- * - 注册数据库上下文QuestionBankDBContext
+ * - 注册数据库上下文QuestionBankDbContext
  * - 注册题目服务IQuestionService
  * - 启用Swagger API文档
  * - 映射所有控制器路由
@@ -54,7 +54,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // 注册数据库上下文，使用mySQL，连接字符串来自配置文件
-builder.Services.AddDbContext<QuestionBankDBContext>(options =>
+builder.Services.AddDbContext<QuestionBankDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
 
@@ -65,6 +65,9 @@ builder.Services.AddDbContext<QuestionBankApi.LoginSystemApi.Data.UserDBContext>
 
 // 注入题目服务
 builder.Services.AddScoped<IQuestionService, QuestionService>();
+
+// 注入试卷服务
+builder.Services.AddScoped<IExamService, ExamService>();
 
 // 注入认证相关服务
 builder.Services.AddScoped<QuestionBankApi.LoginSystemApi.Services.IAuthService, QuestionBankApi.LoginSystemApi.Services.AuthService>();
@@ -142,7 +145,7 @@ void InitializeDatabase(WebApplication app)
         {
             // 初始化题库数据库
             logger.LogInformation("正在初始化题库数据库...");
-            var questionDbContext = services.GetRequiredService<QuestionBankDBContext>();
+            var questionDbContext = services.GetRequiredService<QuestionBankDbContext>();
             questionDbContext.Database.Migrate(); // 应用所有未应用的迁移
             logger.LogInformation("题库数据库初始化完成");
 

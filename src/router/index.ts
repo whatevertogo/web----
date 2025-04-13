@@ -39,6 +39,24 @@ const router = createRouter({
       meta: { requiresAdmin: true }
     },
     {
+      path: '/exam-manage',
+      name: 'ExamManage',
+      component: () => import('../views/ExamManage.vue'),
+      meta: { requiresAdmin: true }
+    },
+    {
+      path: '/exam-taking',
+      name: 'ExamTaking',
+      component: () => import('../views/ExamTaking.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/exam-taking/:id',
+      name: 'ExamTakingDetail',
+      component: () => import('../views/ExamTaking.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'NotFound',
       component: () => import('../views/NotFound.vue')

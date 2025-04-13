@@ -43,7 +43,8 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "用户名和密码不能为空" });
         }
 
-        var token = await _authService.LoginAsync(model.Username, model.Password);
+        // 使用空合并运算符确保参数不为 null
+        var token = await _authService.LoginAsync(model.Username ?? string.Empty, model.Password ?? string.Empty);
         if (token == null)
         {
             Console.WriteLine("登录失败，返回未授权响应");
@@ -63,6 +64,12 @@ public class AuthController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Register([FromBody] RegisterDto model)
     {
+        // 检查用户名和密码是否为空
+        if (string.IsNullOrEmpty(model.Username) || string.IsNullOrEmpty(model.Password))
+        {
+            return BadRequest(new { message = "用户名和密码不能为空" });
+        }
+
         var result = await _authService.RegisterAsync(model.Username, model.Password, model.Role);
         if (!result)
             return BadRequest(new { message = "用户名已存在" });
@@ -99,6 +106,7 @@ public class AuthController : ControllerBase
             var password = "159286";
 
             // 检查用户是否已存在
+            // 确保用户名和密码不为 null
             var result = await _authService.RegisterAsync(username, password, QuestionBankApi.LoginSystemApi.Models.UserRole.Admin);
 
             if (result)
