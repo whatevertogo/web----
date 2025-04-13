@@ -37,9 +37,9 @@ export const examService = {
   },
 
   // 获取学生的试卷
-  async getStudentExams() {
+  async getStudentExams<T = any>() {
     try {
-      return await api.get('/exams');
+      return await api.get<T>('/exams');
     } catch (error) {
       console.error('获取学生试卷列表失败:', error);
       throw error;
@@ -47,9 +47,9 @@ export const examService = {
   },
 
   // 获取试卷详情
-  async getExamById(id: number) {
+  async getExamById<T = any>(id: number) {
     try {
-      return await api.get(`/exams/${id}`);
+      return await api.get<T>(`/exams/${id}`);
     } catch (error) {
       console.error(`获取试卷 ${id} 详情失败:`, error);
       throw error;

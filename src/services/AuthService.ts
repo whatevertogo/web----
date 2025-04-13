@@ -61,9 +61,15 @@ export const authService = {
       // 尝试从令牌解析用户信息
       const userInfo = this.parseToken(token);
 
-      // 验证令牌是否有效
-      const response = await api.get<UserInfo>('/auth/me');
-      return response || userInfo;
+      try {
+        // 验证令牌是否有效
+        const response = await api.get<UserInfo>('/auth/me');
+        return response || userInfo;
+      } catch (error) {
+        console.error('验证用户信息失败:', error);
+        // 如果服务器验证失败，但令牌解析成功，仍然返回令牌中的用户信息
+        return userInfo;
+      }
     } catch (error) {
       console.error('获取用户信息失败:', error);
       this.clearToken();

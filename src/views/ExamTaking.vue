@@ -7,6 +7,14 @@ import { QuestionType, TypeMap } from '../types/question'
 import { examService } from '../services/examService'
 import { Timer, Check, Back } from '@element-plus/icons-vue'
 
+interface Exam {
+  id: number;
+  title: string;
+  description: string;
+  questions: any[];
+  [key: string]: any;
+}
+
 // 获取用户信息和路由
 const userStore = useUserStore()
 const router = useRouter()
@@ -22,7 +30,7 @@ const typeMap: TypeMap = {
 }
 
 // 试卷列表
-const examList = ref([])
+const examList = ref<Exam[]>([])
 const loading = ref(false)
 
 // 当前试卷
@@ -43,52 +51,49 @@ const showResult = ref(false)
 const loadExams = async () => {
   loading.value = true
   try {
-    const response = await examService.getStudentExams()
-    examList.value = response.data
+    const response = await examService.getStudentExams<Exam[]>()
+    // 确保每个试卷的questions字段都是数组
+    examList.value = Array.isArray(response) ? response.map(exam => ({
+      ...exam,
+      questions: Array.isArray(exam.questions) ? exam.questions : []
+    })) : []
 
     // 如果路由中有试卷ID，直接加载该试卷
     const examId = route.params.id
     if (examId) {
-      const exam = examList.value.find(e => e.id === parseInt(examId as string))
-      if (exam) {
-        loadExam(exam.id)
-      }
+      await loadExam(Number(examId))
     }
+
+    console.log('examList:', examList.value)
   } catch (error) {
-    console.error('加载试卷失败:', error)
-    ElMessage.error('加载试卷失败')
+    console.error('加载试卷列表失败:', error)
+    ElMessage.error('加载试卷列表失败')
   } finally {
     loading.value = false
   }
 }
 
 // 加载试卷详情
-const loadExam = async (examId) => {
+const loadExam = async (id: number) => {
   examLoading.value = true
   try {
-    const response = await examService.getExamById(examId)
-    currentExam.value = response.data
-
+    const response = await examService.getExamById<Exam>(id)
+    currentExam.value = response
     // 初始化答案
-    initAnswers()
+    if (currentExam.value?.questions) {
+      currentExam.value.questions.forEach((question: any) => {
+        answers[question.id] = ''
+      })
+    }
 
     // 开始计时
     startTimer()
   } catch (error) {
-    console.error('加载试卷详情失败:', error)
-    ElMessage.error('加载试卷详情失败')
+    console.error('加载试卷失败:', error)
+    ElMessage.error('加载试卷失败')
   } finally {
     examLoading.value = false
   }
-}
-
-// 初始化答案
-const initAnswers = () => {
-  if (!currentExam.value) return
-
-  currentExam.value.questions.forEach(q => {
-    answers[q.questionId] = ''
-  })
 }
 
 // 开始计时
@@ -213,7 +218,7 @@ const getAnswerResult = (questionId: number) => {
           <el-table-column prop="description" label="描述" min-width="200" />
           <el-table-column label="题目数量" width="100">
             <template #default="scope">
-              {{ (scope.row && scope.row.questions) ? (Array.isArray(scope.row.questions) ? scope.row.questions.length : 0) : 0 }}
+              {{ scope.row?.questions?.length ?? 0 }}
             </template>
           </el-table-column>
           <el-table-column label="总分" width="80">
