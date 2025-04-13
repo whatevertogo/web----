@@ -320,14 +320,9 @@ const publishExam = async (exam) => {
 }
 
 // 分配试卷给学生
-const assignExam = async () => {
-  if (!examForm.id) {
-    ElMessage.warning('试卷ID无效')
-    return
-  }
-
+const assignExamToStudents = async () => {
   if (selectedStudents.value.length === 0) {
-    ElMessage.warning('请选择至少一名学生')
+    ElMessage.warning('请至少选择一名学生')
     return
   }
 
@@ -340,8 +335,14 @@ const assignExam = async () => {
     const response = await examService.assignExam(examForm.id, selectedStudents.value)
     console.log('分配试卷响应:', response)
 
-    if (response && response.success) {
-      ElMessage.success(response.message || '发布试卷成功')
+    // 修改这里的判断逻辑
+    // 如果响应直接是 true，或者响应对象包含 success: true，都视为成功
+    if (response === true || (response && response.success)) {
+      // 尝试从响应对象获取消息，否则使用默认成功消息
+      const successMessage = (response && typeof response === 'object' && response.message)
+        ? response.message
+        : '发布试卷成功';
+      ElMessage.success(successMessage)
       studentDialogVisible.value = false
 
       // 添加延时，确保后端处理完成
@@ -349,11 +350,15 @@ const assignExam = async () => {
         loadExams()
       }, 1000)
     } else {
-      ElMessage.error(response?.message || '发布试卷失败，请重试')
+      // 如果响应是对象但 success 为 false，尝试获取错误消息
+      const errorMessage = (response && typeof response === 'object' && (response.message || response.error))
+        ? (response.message || response.error)
+        : '未知错误';
+      ElMessage.error(`发布试卷失败: ${errorMessage}，请重试`) // 显示更具体的错误或默认消息
     }
-  } catch (error) {
-    console.error('发布试卷失败:', error)
-    ElMessage.error(`发布试卷失败: ${error.message || '未知错误'}`)
+  } catch (error: any) {
+    console.error('分配试卷时发生错误:', error)
+    ElMessage.error(`分配试卷时发生错误: ${error.message || '请检查网络或联系管理员'}`)
   }
 }
 
@@ -675,7 +680,7 @@ onMounted(() => {
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="studentDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="assignExam" :disabled="!studentList || studentList.length === 0 || selectedStudents.length === 0">发布</el-button>
+          <el-button type="primary" @click="assignExamToStudents" :disabled="!studentList || studentList.length === 0 || selectedStudents.length === 0">发布</el-button>
         </span>
       </template>
     </el-dialog>

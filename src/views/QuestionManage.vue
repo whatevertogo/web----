@@ -56,8 +56,9 @@ const handleSearch = async () => {
         [searchForm.dateRange[0], searchForm.dateRange[1]] : undefined
     })
     tableData.value = questions
-  } catch (error) {
-    ElMessage.error('搜索失败')
+  } catch (error: any) { // 修改这里，捕获具体错误
+    console.error('搜索失败:', error) // 保留控制台错误
+    ElMessage.error(`搜索失败: ${error.message || '未知错误'}`) // 添加用户提示
   } finally {
     loading.value = false
   }
@@ -384,9 +385,9 @@ const loadQuestions = async () => {
       tableData.value = questions
       console.log('加载到的题目数量:', questions.length)
     }
-  } catch (error) {
-    console.error('加载题目失败:', error)
-    ElMessage.error('加载题目失败')
+  } catch (error: any) { // 修改这里，捕获具体错误
+    console.error('加载题目失败:', error) // 保留控制台错误
+    ElMessage.error(`加载题目失败: ${error.message || '未知错误'}`) // 添加用户提示
   } finally {
     loading.value = false
   }

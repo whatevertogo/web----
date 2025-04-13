@@ -213,12 +213,12 @@ const getAnswerResult = (questionId: number) => {
           <el-table-column prop="description" label="描述" min-width="200" />
           <el-table-column label="题目数量" width="100">
             <template #default="scope">
-              {{ scope.row.questions.length }}
+              {{ (scope.row && scope.row.questions) ? (Array.isArray(scope.row.questions) ? scope.row.questions.length : 0) : 0 }}
             </template>
           </el-table-column>
           <el-table-column label="总分" width="80">
             <template #default="scope">
-              {{ scope.row.totalScore }}
+              {{ (scope.row && scope.row.totalScore !== undefined) ? scope.row.totalScore : 0 }}
             </template>
           </el-table-column>
           <el-table-column label="状态" width="100">
