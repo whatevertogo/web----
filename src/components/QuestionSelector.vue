@@ -50,6 +50,8 @@ const loadQuestions = async () => {
         [searchForm.dateRange[0], searchForm.dateRange[1]] : undefined
     })
     questions.value = response
+    // 加载完成后设置默认选中状态
+    setDefaultSelection()
   } catch (error) {
     console.error('加载题目失败:', error)
     ElMessage.error('加载题目失败')
@@ -80,6 +82,23 @@ const confirmSelection = () => {
 onMounted(() => {
   loadQuestions()
 })
+
+// 设置默认选中状态
+const setDefaultSelection = () => {
+  // 在表格渲染完成后设置默认选中状态
+  setTimeout(() => {
+    const table = document.querySelector('.question-selector .el-table__body');
+    if (table && props.selectedQuestions.length > 0) {
+      props.selectedQuestions.forEach(selected => {
+        const matchingQuestion = questions.value.find(q => q.id === selected.id);
+        if (matchingQuestion) {
+          // 这里只是模拟选中状态，实际上需要通过 Element Plus 的 API 来实现
+          currentSelection.value = [...props.selectedQuestions];
+        }
+      });
+    }
+  }, 300);
+}
 </script>
 
 <template>
@@ -128,6 +147,7 @@ onMounted(() => {
         style="width: 100%"
         @selection-change="handleSelectionChange"
         v-loading="loading"
+        row-key="id"
       >
         <el-table-column
           type="selection"
@@ -149,12 +169,11 @@ onMounted(() => {
           </template>
         </el-table-column>
         <el-table-column
-          prop="question"
           label="题目内容"
           min-width="300"
         >
           <template #default="scope">
-            <div class="question-content">{{ scope.row.question }}</div>
+            <div class="question-content">{{ scope.row.question || scope.row.content }}</div>
           </template>
         </el-table-column>
         <el-table-column

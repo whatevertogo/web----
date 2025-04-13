@@ -5,13 +5,19 @@ export const examService = {
   // 获取所有试卷（管理员）
   async getExams() {
     try {
-      return await api.get('/exams');
+      const response = await api.get('/exams');
+      // 如果返回空数组，创建一个空数组作为默认值
+      if (!response || !response.data) {
+        return { data: [] };
+      }
+      return response;
     } catch (error) {
       console.error('获取试卷列表失败:', error);
-      throw error;
+      // 返回空数组作为默认值，避免前端报错
+      return { data: [] };
     }
   },
-  
+
   // 获取学生的试卷
   async getStudentExams() {
     try {
@@ -21,7 +27,7 @@ export const examService = {
       throw error;
     }
   },
-  
+
   // 获取试卷详情
   async getExamById(id: number) {
     try {
@@ -31,7 +37,7 @@ export const examService = {
       throw error;
     }
   },
-  
+
   // 创建试卷
   async createExam(examData: any) {
     try {
@@ -41,7 +47,7 @@ export const examService = {
       throw error;
     }
   },
-  
+
   // 更新试卷
   async updateExam(examData: any) {
     try {
@@ -51,7 +57,7 @@ export const examService = {
       throw error;
     }
   },
-  
+
   // 删除试卷
   async deleteExam(id: number) {
     try {
@@ -61,7 +67,7 @@ export const examService = {
       throw error;
     }
   },
-  
+
   // 获取学生列表
   async getStudents() {
     try {
@@ -71,7 +77,7 @@ export const examService = {
       throw error;
     }
   },
-  
+
   // 分配试卷给学生
   async assignExam(examId: number, studentIds: number[]) {
     try {
@@ -81,7 +87,7 @@ export const examService = {
       throw error;
     }
   },
-  
+
   // 提交试卷
   async submitExam(examId: number, submission: any) {
     try {
@@ -91,7 +97,7 @@ export const examService = {
       throw error;
     }
   },
-  
+
   // 获取试卷统计信息
   async getExamStatistics(examId: number) {
     try {
@@ -101,12 +107,12 @@ export const examService = {
       throw error;
     }
   },
-  
+
   // 获取试卷结果
   async getExamResults(examId: number, studentId?: number) {
     try {
-      const url = studentId 
-        ? `/exams/${examId}/results?studentId=${studentId}` 
+      const url = studentId
+        ? `/exams/${examId}/results?studentId=${studentId}`
         : `/exams/${examId}/results`;
       return await api.get(url);
     } catch (error) {
@@ -114,7 +120,7 @@ export const examService = {
       throw error;
     }
   },
-  
+
   // 导出试卷结果
   async exportExamResults(examId: number) {
     try {

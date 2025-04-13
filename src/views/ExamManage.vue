@@ -64,10 +64,11 @@ const loadExams = async () => {
   loading.value = true
   try {
     const response = await examService.getExams()
-    examList.value = response.data
+    examList.value = response.data || []
   } catch (error) {
     console.error('加载试卷失败:', error)
     ElMessage.error('加载试卷失败')
+    examList.value = []
   } finally {
     loading.value = false
   }
@@ -160,7 +161,9 @@ const saveExam = async () => {
     }
 
     examDialogVisible.value = false
-    loadExams()
+    setTimeout(() => {
+      loadExams()
+    }, 500) // 添加延时，确保后端处理完成
   } catch (error) {
     console.error('保存试卷失败:', error)
     ElMessage.error('保存试卷失败')
@@ -168,9 +171,14 @@ const saveExam = async () => {
 }
 
 // 打开选择题目对话框
-const openQuestionDialog = () => {
-  questionService.loadQuestions()
-  questionDialogVisible.value = true
+const openQuestionDialog = async () => {
+  try {
+    await questionService.getQuestions()
+    questionDialogVisible.value = true
+  } catch (error) {
+    console.error('加载题目失败:', error)
+    ElMessage.error('加载题目失败')
+  }
 }
 
 // 选择题目
@@ -248,7 +256,7 @@ onMounted(() => {
         </div>
       </template>
 
-      <el-table v-else :data="examList" style="width: 100%">
+      <el-table v-else :data="examList" style="width: 100%" row-key="id">
         <el-table-column prop="title" label="试卷标题" min-width="200" />
         <el-table-column prop="description" label="描述" min-width="200" />
         <el-table-column label="题目数量" width="100">
@@ -337,7 +345,7 @@ onMounted(() => {
               <el-empty description="暂无题目" />
             </div>
 
-            <el-table v-else :data="selectedQuestions" style="width: 100%">
+            <el-table v-else :data="selectedQuestions" style="width: 100%" row-key="id">
               <el-table-column label="序号" width="60">
                 <template #default="scope">
                   {{ scope.$index + 1 }}
@@ -348,7 +356,11 @@ onMounted(() => {
                   {{ typeMap[scope.row.type] }}
                 </template>
               </el-table-column>
-              <el-table-column prop="question" label="题目内容" min-width="300" />
+              <el-table-column label="题目内容" min-width="300">
+                <template #default="scope">
+                  {{ scope.row.question || scope.row.content }}
+                </template>
+              </el-table-column>
               <el-table-column label="操作" width="80">
                 <template #default="scope">
                   <el-button type="danger" :icon="Delete" circle size="small" @click="removeQuestion(scope.$index)" />
@@ -394,6 +406,7 @@ onMounted(() => {
         :data="studentList"
         style="width: 100%"
         @selection-change="selectedStudents = $event.map(item => item.id)"
+        row-key="id"
       >
         <el-table-column type="selection" width="55" />
         <el-table-column prop="id" label="ID" width="80" />
@@ -440,7 +453,7 @@ onMounted(() => {
         </div>
 
         <h3>题目正确率</h3>
-        <el-table :data="currentExamStatistics.questionStatistics" style="width: 100%">
+        <el-table :data="currentExamStatistics.questionStatistics" style="width: 100%" row-key="order">
           <el-table-column prop="order" label="序号" width="60" />
           <el-table-column label="题型" width="100">
             <template #default="scope">
