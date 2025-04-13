@@ -6,6 +6,7 @@ import type { FormInstance } from 'element-plus'
 import { QuestionType, TypeMap, TableQuestion } from '../types/question'
 import { questionService } from '../services/questionService'
 import { useUserStore } from '../stores/userStore'
+import { Download, Plus, View, Delete, Search, Refresh } from '@element-plus/icons-vue'
 
 // 获取路由器实例
 const router = useRouter()
@@ -24,6 +25,9 @@ const tableData = ref<TableQuestion[]>([])
 
 // 表格加载状态
 const loading = ref(false)
+
+// 选中的题目
+const selectedQuestions = ref<TableQuestion[]>([])
 
 // 查看详情对话框
 const detailDialogVisible = ref(false)
@@ -388,6 +392,25 @@ const loadQuestions = async () => {
   }
 }
 
+// 处理选择变化
+const handleSelectionChange = (selection: TableQuestion[]) => {
+  selectedQuestions.value = selection
+}
+
+// 导出选中题目
+const exportSelectedQuestions = () => {
+  if (selectedQuestions.value.length === 0) {
+    ElMessage.warning('请先选择要导出的题目')
+    return
+  }
+
+  // 将选中的题目保存到服务中
+  questionService.selectedQuestions = selectedQuestions.value
+
+  // 跳转到导出页面
+  router.push('/export')
+}
+
 // 初始加载
 onMounted(() => {
   loadQuestions()
@@ -421,7 +444,7 @@ onActivated(() => {
               v-for="(label, key) in typeMap"
               :key="key"
               :label="label"
-              :value="key"
+              :value="Number(key)"
             />
           </el-select>
         </el-form-item>
@@ -471,9 +494,18 @@ onActivated(() => {
       <template #header>
         <div class="table-header">
           <span>试题列表</span>
-          <el-button v-if="userStore.isAdmin()" type="primary" @click="router.push('/input')">
-            <el-icon><Plus /></el-icon>新增试题
-          </el-button>
+          <div class="header-buttons">
+            <el-button
+              type="success"
+              :disabled="selectedQuestions.length === 0"
+              @click="exportSelectedQuestions"
+            >
+              <el-icon><Download /></el-icon>导出选中题目 ({{ selectedQuestions.length }})
+            </el-button>
+            <el-button v-if="userStore.isAdmin()" type="primary" @click="router.push('/input')">
+              <el-icon><Plus /></el-icon>新增试题
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -481,7 +513,12 @@ onActivated(() => {
         :data="currentPageData"
         v-loading="loading"
         style="width: 100%"
+        @selection-change="handleSelectionChange"
       >
+        <el-table-column
+          type="selection"
+          width="55"
+        />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="type" label="题型" width="100">
           <template #default="{ row }">
@@ -543,7 +580,7 @@ onActivated(() => {
                 v-for="(label, type) in typeMap"
                 :key="type"
                 :label="label"
-                :value="type"
+                :value="Number(type)"
               />
             </el-select>
           </el-form-item>
@@ -735,6 +772,11 @@ onActivated(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
 }
 
 .question-content {

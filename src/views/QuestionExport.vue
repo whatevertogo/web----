@@ -5,11 +5,12 @@ import { QuestionType, TableQuestion } from '../types/question'
 import { questionService } from '../services/questionService'
 import { exportToWord } from '../utils/wordExport.js'
 import * as XLSX from 'xlsx'
+import { Search, Refresh } from '@element-plus/icons-vue'
 
 // 导出设置
 const exportSettings = ref({
   format: 'excel', // 'excel' 或 'word'
-  range: 'all', // 'all' 或 'filtered' 或 'selected'
+  range: 'all', // 'all' 或 'filtered_selected'
   includeAnalysis: true
 })
 
@@ -41,10 +42,12 @@ const updateFilteredQuestions = async () => {
     const questions = await questionService.getQuestions({
       keyword: searchForm.value.keyword,
       type: searchForm.value.type ? Number(searchForm.value.type) as QuestionType : undefined,
-      dateRange: searchForm.value.dateRange.length ? 
+      dateRange: searchForm.value.dateRange.length ?
         [searchForm.value.dateRange[0], searchForm.value.dateRange[1]] : undefined
     })
     filteredQuestions.value = questions
+    // 重置选中的题目
+    selectedQuestionIds.value = []
   } catch (error: any) {
     console.error('获取筛选题目失败:', error)
     ElMessage.error(`获取题目失败: ${error.message || '未知错误'}`)
@@ -54,40 +57,58 @@ const updateFilteredQuestions = async () => {
   }
 }
 
+// 重置筛选条件
+const resetFilter = () => {
+  searchForm.value.keyword = ''
+  searchForm.value.type = ''
+  searchForm.value.dateRange = []
+  updateFilteredQuestions()
+}
+
 // 导出题目数量
 const questionCount = computed(() => {
-  if (exportSettings.value.range === 'selected') {
+  if (exportSettings.value.range === 'filtered_selected') {
+    // 如果是筛选并选择模式，返回选中的题目数量
     return selectedQuestionIds.value.length
+  } else {
+    // 如果是全部题目模式，返回所有题目数量
+    return questionService.questions.value.length
   }
-  return exportSettings.value.range === 'all' 
-    ? questionService.questions.value.length 
-    : filteredQuestions.value.length
 })
 
 // 获取要导出的题目
 const getExportQuestions = () => {
-  if (exportSettings.value.range === 'selected') {
-    return questionService.questions.value.filter(q => selectedQuestionIds.value.includes(q.id))
+  if (exportSettings.value.range === 'filtered_selected') {
+    // 如果是筛选并选择模式，返回选中的题目
+    return filteredQuestions.value.filter(q => selectedQuestionIds.value.includes(q.id))
+  } else {
+    // 如果是全部题目模式，返回所有题目
+    return questionService.questions.value
   }
-  return exportSettings.value.range === 'all' 
-    ? questionService.questions.value 
-    : filteredQuestions.value
 }
 
-// 当筛选条件变化时更新结果
-watch(() => [
-  searchForm.value.keyword, 
-  searchForm.value.type, 
-  searchForm.value.dateRange
-], () => {
-  if (exportSettings.value.range === 'filtered') {
+// 当导出范围变化时更新结果
+watch(() => exportSettings.value.range, (newRange) => {
+  if (newRange === 'filtered_selected') {
+    // 如果切换到筛选并选择模式，自动加载题目
     updateFilteredQuestions()
   }
-}, { deep: true })
+})
 
 // 初始加载数据
 onMounted(() => {
-  updateFilteredQuestions()
+  // 检查是否有从 QuestionManage 传递过来的选中题目
+  if (questionService.selectedQuestions && questionService.selectedQuestions.length > 0) {
+    // 如果有，自动切换到筛选并选择模式
+    exportSettings.value.range = 'filtered_selected'
+    // 将选中的题目加载到筛选结果中
+    filteredQuestions.value = questionService.questions.value
+    // 设置选中的题目 ID
+    selectedQuestionIds.value = questionService.selectedQuestions.map(q => q.id)
+  } else {
+    // 如果没有，加载所有题目
+    updateFilteredQuestions()
+  }
 })
 
 // 执行导出
@@ -100,7 +121,7 @@ const handleExport = async () => {
   loading.value = true
   try {
     const questions = getExportQuestions()
-    
+
     if (exportSettings.value.format === 'excel') {
       await exportToExcel(questions)
       ElMessage.success('Excel导出成功')
@@ -140,10 +161,10 @@ const exportToExcel = async (questions: any[]) => {
         题目内容: q.question,
         创建时间: q.createTime,
       }
-      
+
       // 根据题型添加特定字段
       let specificInfo = {}
-      
+
       switch(q.type) {
         case QuestionType.Single:
           specificInfo = {
@@ -176,10 +197,10 @@ const exportToExcel = async (questions: any[]) => {
           }
           break
       }
-      
+
       // 添加解析（如果需要）
       const analysisInfo = exportSettings.value.includeAnalysis ? { 解析: q.analysis || '' } : {}
-      
+
       // 合并所有信息
       return {
         ...baseInfo,
@@ -187,12 +208,12 @@ const exportToExcel = async (questions: any[]) => {
         ...analysisInfo
       }
     })
-    
+
     // 创建工作簿和工作表
     const worksheet = XLSX.utils.json_to_sheet(data)
     const workbook = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook, worksheet, '题库')
-    
+
     // 导出
     XLSX.writeFileXLSX(workbook, `题库导出_${new Date().toLocaleDateString()}.xlsx`)
     return true
@@ -203,14 +224,19 @@ const exportToExcel = async (questions: any[]) => {
 }
 
 // 处理选择变化
-const handleSelectionChange = (selection) => {
+const handleSelectionChange = (selection: TableQuestion[]) => {
   selectedQuestionIds.value = selection.map(item => item.id)
 }
 
 // 全选/取消全选
-const handleSelectAll = (val) => {
+const handleSelectAll = (val: boolean) => {
   if (val) {
-    selectedQuestionIds.value = questionService.questions.value.map(q => q.id)
+    // 如果是筛选并选择模式，则全选筛选后的题目
+    if (exportSettings.value.range === 'filtered_selected') {
+      selectedQuestionIds.value = filteredQuestions.value.map(q => q.id)
+    } else {
+      selectedQuestionIds.value = questionService.questions.value.map(q => q.id)
+    }
   } else {
     selectedQuestionIds.value = []
   }
@@ -220,7 +246,7 @@ const handleSelectAll = (val) => {
 <template>
   <div class="export-page">
     <h2>导出试题</h2>
-    
+
     <el-card class="export-card">
       <div v-loading="loading">
         <div class="export-options">
@@ -230,107 +256,121 @@ const handleSelectAll = (val) => {
                 <el-radio value="word">Word文档</el-radio>
               </el-radio-group>
             </el-form-item>
-            
+
             <el-form-item label="导出范围">
               <el-radio-group v-model="exportSettings.range">
                 <el-radio label="all">全部题目</el-radio>
-                <el-radio label="filtered">筛选题目</el-radio>
-                <el-radio label="selected">选中题目</el-radio>
+                <el-radio label="filtered_selected">筛选并选择题目</el-radio>
               </el-radio-group>
             </el-form-item>
-            
+
             <el-form-item label="包含解析">
               <el-switch v-model="exportSettings.includeAnalysis" />
             </el-form-item>
           </el-form>
         </div>
-        
-        <!-- 筛选条件 -->
-        <div v-if="exportSettings.range === 'filtered'" class="filter-options">
-          <el-form :model="searchForm" label-width="100px">
-            <el-form-item label="关键词">
-              <el-input v-model="searchForm.keyword" placeholder="搜索题目内容" />
-            </el-form-item>
-            
-            <el-form-item label="题型">
-              <el-select v-model="searchForm.type" placeholder="选择题型" clearable>
-                <el-option 
-                  v-for="(label, value) in typeMap" 
-                  :key="value" 
-                  :label="label" 
-                  :value="value" 
+
+        <!-- 筛选并选择区域 -->
+        <div v-if="exportSettings.range === 'filtered_selected'" class="filter-select-area">
+          <!-- 筛选条件 -->
+          <div class="filter-options">
+            <h3>筛选条件</h3>
+            <el-form :model="searchForm" label-width="100px">
+              <el-form-item label="关键词">
+                <el-input v-model="searchForm.keyword" placeholder="搜索题目内容" />
+              </el-form-item>
+
+              <el-form-item label="题型">
+                <el-select v-model="searchForm.type" placeholder="选择题型" clearable>
+                  <el-option
+                    v-for="(label, value) in typeMap"
+                    :key="value"
+                    :label="label"
+                    :value="Number(value)"
+                  />
+                </el-select>
+              </el-form-item>
+
+              <el-form-item label="创建日期">
+                <el-date-picker
+                  v-model="searchForm.dateRange"
+                  type="daterange"
+                  range-separator="至"
+                  start-placeholder="开始日期"
+                  end-placeholder="结束日期"
+                  format="YYYY-MM-DD"
                 />
-              </el-select>
-            </el-form-item>
-            
-            <el-form-item label="创建日期">
-              <el-date-picker
-                v-model="searchForm.dateRange"
-                type="daterange"
-                range-separator="至"
-                start-placeholder="开始日期"
-                end-placeholder="结束日期"
-                format="YYYY-MM-DD"
+              </el-form-item>
+
+              <el-form-item>
+                <el-button type="primary" @click="updateFilteredQuestions">
+                  <el-icon><Search /></el-icon> 筛选
+                </el-button>
+                <el-button @click="resetFilter">
+                  <el-icon><Refresh /></el-icon> 重置
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </div>
+
+          <!-- 题目选择表格 -->
+          <div class="question-table">
+            <h3>选择题目</h3>
+            <el-table
+              :data="filteredQuestions"
+              style="width: 100%"
+              @selection-change="handleSelectionChange"
+              v-loading="loading"
+            >
+              <el-table-column
+                type="selection"
+                width="55"
               />
-            </el-form-item>
-          </el-form>
-        </div>
-        
-        <!-- 题目选择表格 -->
-        <div v-if="exportSettings.range === 'selected'" class="question-table">
-          <el-table
-            :data="questionService.questions.value"
-            style="width: 100%"
-            @selection-change="handleSelectionChange"
-          >
-            <el-table-column
-              type="selection"
-              width="55"
-            />
-            <el-table-column
-              prop="id"
-              label="ID"
-              width="80"
-            />
-            <el-table-column
-              prop="type"
-              label="题型"
-              width="100"
-            >
-              <template #default="scope">
-                {{ typeMap[scope.row.type] }}
-              </template>
-            </el-table-column>
-            <el-table-column
-              prop="question"
-              label="题目内容"
-            >
-              <template #default="scope">
-                <div class="question-content">{{ scope.row.question }}</div>
-              </template>
-            </el-table-column>
-            <el-table-column
-              prop="createTime"
-              label="创建时间"
-              width="180"
-            />
-          </el-table>
-          
-          <div class="table-footer">
-            <el-checkbox
-              :indeterminate="selectedQuestionIds.length > 0 && selectedQuestionIds.length < questionService.questions.value.length"
-              :checked="selectedQuestionIds.length === questionService.questions.value.length && questionService.questions.value.length > 0"
-              @change="handleSelectAll"
-            >
-              全选
-            </el-checkbox>
-            
-            <div>已选择 {{ selectedQuestionIds.length }} 道题目</div>
+              <el-table-column
+                prop="id"
+                label="ID"
+                width="80"
+              />
+              <el-table-column
+                prop="type"
+                label="题型"
+                width="100"
+              >
+                <template #default="scope">
+                  {{ typeMap[scope.row.type] }}
+                </template>
+              </el-table-column>
+              <el-table-column
+                prop="question"
+                label="题目内容"
+              >
+                <template #default="scope">
+                  <div class="question-content">{{ scope.row.question }}</div>
+                </template>
+              </el-table-column>
+              <el-table-column
+                prop="createTime"
+                label="创建时间"
+                width="180"
+              />
+            </el-table>
+
+            <div class="table-footer">
+              <el-checkbox
+                :indeterminate="selectedQuestionIds.length > 0 && selectedQuestionIds.length < filteredQuestions.length"
+                :checked="selectedQuestionIds.length === filteredQuestions.length && filteredQuestions.length > 0"
+                @change="handleSelectAll"
+              >
+                全选
+              </el-checkbox>
+
+              <div>已选择 {{ selectedQuestionIds.length }} 道题目</div>
+            </div>
           </div>
         </div>
-        
+
         <!-- 预览选中的题目 -->
-        <div v-if="exportSettings.range !== 'selected' && questionCount > 0" class="preview-questions">
+        <div v-if="exportSettings.range === 'all' && questionCount > 0" class="preview-questions">
           <h3>将导出以下题目:</h3>
           <el-table
             :data="getExportQuestions().slice(0, 5)"
@@ -363,15 +403,15 @@ const handleSelectAll = (val) => {
             ...以及其他 {{ questionCount - 5 }} 道题目
           </div>
         </div>
-        
+
         <div class="export-summary">
           <p>将导出 <strong>{{ questionCount }}</strong> 道试题</p>
         </div>
-        
+
         <div class="export-actions">
-          <el-button 
-            type="primary" 
-            :loading="loading" 
+          <el-button
+            type="primary"
+            :loading="loading"
             @click="handleExport"
             :disabled="questionCount === 0"
           >
@@ -417,8 +457,32 @@ const handleSelectAll = (val) => {
   padding: 10px 0;
 }
 
+.filter-select-area {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.filter-options {
+  margin-bottom: 20px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 15px;
+}
+
+.filter-options h3,
+.question-table h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: #606266;
+}
+
 .question-table {
   margin: 20px 0;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 15px;
 }
 
 .preview-questions {

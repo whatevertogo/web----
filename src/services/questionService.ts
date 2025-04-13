@@ -38,7 +38,7 @@ const testData: TableQuestion[] = [
   {
     id: 1,
     type: QuestionType.Single,
-    question: '下列选项中，不属于 Vue 生命周期钩子的是？',
+    question: 'Wrong,出现默认测试数据说明数据库未导入或者后端未打开，下列选项中，不属于 Vue 生命周期钩子的是？Wrong,出现默认测试数据说明数据库未导入或者后端未打开',
     options: ['created', 'mounted', 'updated', 'deleted'],
     correctAnswer: 'D',
     answers: ['deleted'],
@@ -50,7 +50,7 @@ const testData: TableQuestion[] = [
   {
     id: 2,
     type: QuestionType.Judge,
-    question: 'Vue 3 中的 Composition API 可以与 Options API 混合使用。',
+    question: 'Wrong,出现默认测试数据说明数据库未导入或者后端未打开，Vue 3 中的 Composition API 可以与 Options API 混合使用。Wrong,出现默认测试数据说明数据库未导入或者后端未打开',
     correctAnswer: '正确',
     answers: ['正确'],
     analysis: 'Vue 3 允许在同一个组件中混合使用 Composition API 和 Options API。',
@@ -62,6 +62,9 @@ const testData: TableQuestion[] = [
 
 // 缓存题目列表
 const questions = ref<TableQuestion[]>([])
+
+// 选中的题目
+let selectedQuestions: TableQuestion[] = []
 
 // 将 API 返回的题目格式转换为前端使用的格式
 export const convertApiQuestion = (q: ApiQuestion): TableQuestion => {
@@ -111,6 +114,7 @@ export const convertApiQuestion = (q: ApiQuestion): TableQuestion => {
 
 export const questionService = {
   questions,
+  selectedQuestions,
 
   async getQuestions(params?: SearchParams): Promise<TableQuestion[]> {
     try {

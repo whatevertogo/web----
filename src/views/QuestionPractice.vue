@@ -5,6 +5,7 @@ import { useQuestionStore } from '../stores/questionStore'
 import { QuestionType } from '../types/question'
 import { questionService } from '../services/questionService'
 import { SingleChoice, JudgeQuestion, FillBlank, ProgramQuestion, ShortAnswerQuestion } from '../components/questions'
+import { InfoFilled } from '@element-plus/icons-vue'
 
 // 考试状态
 import type { Ref } from 'vue'
@@ -34,6 +35,15 @@ const examResults = ref({
 
 // 显示答案解析
 const showExplanation = ref(false)
+
+// 处理解析显示状态变化
+const handleExplanationChange = (value: boolean) => {
+  console.log('解析显示状态变化:', value)
+  // 当开启解析时，自动展开所有题目
+  if (value) {
+    // 这里可以添加其他逻辑，如自动展开所有题目
+  }
+}
 
 // 当前题目索引
 const currentQuestionIndex = computed(() => {
@@ -609,11 +619,17 @@ onUnmounted(() => {
       <div class="review-section">
         <div class="review-header">
           <h4>题目回顾</h4>
-          <el-switch
-            v-model="showExplanation"
-            active-text="显示解析"
-            inactive-text="隐藏解析"
-          />
+          <div class="review-controls">
+            <el-switch
+              v-model="showExplanation"
+              active-text="显示解析和正确答案"
+              inactive-text="隐藏解析"
+              @change="handleExplanationChange"
+            />
+            <el-tooltip content="显示解析时会自动显示所有题目的正确答案" placement="top">
+              <el-icon class="info-icon"><InfoFilled /></el-icon>
+            </el-tooltip>
+          </div>
         </div>
 
         <el-collapse>
@@ -632,35 +648,41 @@ onUnmounted(() => {
                   <div
                     v-for="(option, idx) in question.options"
                     :key="idx"
-                    :class="[
-                      'option-item',
-                      store.answers[question.id] === String.fromCharCode(65 + idx) ? 'user-selected' : '',
-                      question.correctAnswer === String.fromCharCode(65 + idx) ? 'correct-answer' : ''
-                    ]"
+                    :class="{
+                      'option-item': true,
+                      'user-selected': store.answers[question.id] === String.fromCharCode(65 + idx),
+                      'correct-answer': showExplanation && store.answers[question.id] && (question.correctAnswer === String.fromCharCode(65 + idx) || option === question.correctAnswer)
+                    }"
                   >
                     {{ String.fromCharCode(65 + idx) }}. {{ option }}
+                    <span v-if="showExplanation && store.answers[question.id] && (question.correctAnswer === String.fromCharCode(65 + idx) || option === question.correctAnswer)" class="correct-mark">✔</span>
+                    <span v-if="store.answers[question.id] === String.fromCharCode(65 + idx) && question.correctAnswer !== String.fromCharCode(65 + idx) && option !== question.correctAnswer" class="wrong-mark">✖</span>
                   </div>
                 </template>
 
                 <!-- 判断题 -->
                 <template v-else-if="question.type === QuestionType.Judge">
                   <div
-                    :class="[
-                      'option-item',
-                      store.answers[question.id] === '正确' ? 'user-selected' : '',
-                      question.correctAnswer === '正确' ? 'correct-answer' : ''
-                    ]"
+                    :class="{
+                      'option-item': true,
+                      'user-selected': store.answers[question.id] === '正确',
+                      'correct-answer': showExplanation && store.answers[question.id] && question.correctAnswer === '正确'
+                    }"
                   >
                     正确
+                    <span v-if="showExplanation && store.answers[question.id] && question.correctAnswer === '正确'" class="correct-mark">✔</span>
+                    <span v-if="store.answers[question.id] === '正确' && question.correctAnswer !== '正确'" class="wrong-mark">✖</span>
                   </div>
                   <div
-                    :class="[
-                      'option-item',
-                      store.answers[question.id] === '错误' ? 'user-selected' : '',
-                      question.correctAnswer === '错误' ? 'correct-answer' : ''
-                    ]"
+                    :class="{
+                      'option-item': true,
+                      'user-selected': store.answers[question.id] === '错误',
+                      'correct-answer': showExplanation && store.answers[question.id] && question.correctAnswer === '错误'
+                    }"
                   >
                     错误
+                    <span v-if="showExplanation && store.answers[question.id] && question.correctAnswer === '错误'" class="correct-mark">✔</span>
+                    <span v-if="store.answers[question.id] === '错误' && question.correctAnswer !== '错误'" class="wrong-mark">✖</span>
                   </div>
                 </template>
 
@@ -670,7 +692,7 @@ onUnmounted(() => {
                     <div class="fill-label">空 {{ idx + 1 }}:</div>
                     <div class="fill-content">
                       <div class="user-answer">你的答案: {{ store.answers[question.id]?.[idx] || '未作答' }}</div>
-                      <div class="correct-answer">正确答案: {{ answer }}</div>
+                      <div v-if="showExplanation && store.answers[question.id]" class="correct-answer">正确答案: {{ answer }}</div>
                     </div>
                   </div>
                 </template>
@@ -680,14 +702,16 @@ onUnmounted(() => {
                   <div class="other-answer">
                     <div>你的答案:</div>
                     <pre>{{ store.answers[question.id] || '未作答' }}</pre>
-                    <div>参考答案:</div>
-                    <pre v-if="question.type === QuestionType.Program">{{ question.sampleOutput }}</pre>
-                    <pre v-else-if="question.type === QuestionType.ShortAnswer">{{ question.referenceAnswer }}</pre>
+                    <template v-if="showExplanation && store.answers[question.id]">
+                      <div>参考答案:</div>
+                      <pre v-if="question.type === QuestionType.Program">{{ question.sampleOutput }}</pre>
+                      <pre v-else-if="question.type === QuestionType.ShortAnswer">{{ question.referenceAnswer }}</pre>
+                    </template>
                   </div>
                 </template>
 
                 <!-- 解析 -->
-                <div v-if="showExplanation" class="explanation">
+                <div v-if="showExplanation && store.answers[question.id]" class="explanation">
                   <h5>解析:</h5>
                   <p>{{ question.analysis }}</p>
                 </div>
@@ -803,6 +827,17 @@ onUnmounted(() => {
   margin-bottom: 15px;
 }
 
+.review-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.info-icon {
+  color: #909399;
+  cursor: help;
+}
+
 .question-review {
   padding: 10px;
 }
@@ -824,6 +859,19 @@ onUnmounted(() => {
   border-color: #67c23a;
 }
 
+/* 用户选择了错误选项时的样式 */
+.user-selected:not(.correct-answer) {
+  background-color: #fef0f0;
+  border-color: #f56c6c;
+}
+
+/* 用户选择了正确选项时的样式 */
+.user-selected.correct-answer {
+  background-color: #f0f9eb;
+  border-color: #67c23a;
+  box-shadow: 0 0 0 2px rgba(103, 194, 58, 0.2);
+}
+
 .fill-review {
   display: flex;
   margin: 10px 0;
@@ -842,7 +890,7 @@ onUnmounted(() => {
   margin-bottom: 5px;
 }
 
-.correct-answer {
+.fill-content .correct-answer {
   color: #67c23a;
 }
 
@@ -858,6 +906,18 @@ onUnmounted(() => {
   padding: 10px;
   background-color: #fdf6ec;
   border-radius: 4px;
+}
+
+.correct-mark {
+  color: #67c23a;
+  margin-left: 8px;
+  font-weight: bold;
+}
+
+.wrong-mark {
+  color: #f56c6c;
+  margin-left: 8px;
+  font-weight: bold;
 }
 
 .action-buttons {
