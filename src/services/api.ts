@@ -14,11 +14,21 @@ export const api = {
       await new Promise(resolve => setTimeout(resolve, 300))
       const queryParams = params ? new URLSearchParams(params).toString() : '';
       const url = queryParams ? `${config.apiBaseUrl}${endpoint}?${queryParams}` : `${config.apiBaseUrl}${endpoint}`;
+
+      // 准备请求头
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // 添加认证令牌
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        headers
       });
 
       // 204 No Content
@@ -73,11 +83,21 @@ export const api = {
   async post<T>(endpoint: string, data: any): Promise<T> {
     try {
       await new Promise(resolve => setTimeout(resolve, 300))
+
+      // 准备请求头
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // 添加认证令牌
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(config.apiBaseUrl + endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data)
       })
 
@@ -131,11 +151,21 @@ export const api = {
   async put<T>(endpoint: string, data: any): Promise<T> {
     try {
       await new Promise(resolve => setTimeout(resolve, 300))
+
+      // 准备请求头
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // 添加认证令牌
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(config.apiBaseUrl + endpoint, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data)
       })
 
@@ -189,11 +219,21 @@ export const api = {
   async delete<T>(endpoint: string): Promise<T> {
     try {
       await new Promise(resolve => setTimeout(resolve, 300))
+
+      // 准备请求头
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // 添加认证令牌
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(config.apiBaseUrl + endpoint, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        headers
       })
 
       // 204 No Content

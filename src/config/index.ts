@@ -4,7 +4,7 @@ interface Config {
 }
 
 const config: Config = {
-  apiBaseUrl: '/api',
+  apiBaseUrl: 'http://localhost:7289/api',
   apiTimeout: 10000, // 10秒超时
 }
 

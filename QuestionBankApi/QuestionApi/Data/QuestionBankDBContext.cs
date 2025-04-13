@@ -1,5 +1,5 @@
 /*
- * AppDbContext.cs
+ * QuestionBankDBContext.cs
  * ----------------
  * Entity Framework Core 的数据库上下文类。
  * 负责管理数据库连接、实体映射，定义数据库中的数据表。
@@ -17,14 +17,14 @@ namespace QuestionBankApi.Data;
 
 /// <summary>
 /// 应用程序的数据库上下文，管理数据库连接和实体映射
-public class AppDbContext : DbContext
+public class QuestionBankDBContext : DbContext
 /// </summary>
 {
     /// <summary>
     /// 构造函数，传入数据库上下文配置参数
     /// </summary>
     /// <param name="options">数据库上下文配置</param>
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    public QuestionBankDBContext(DbContextOptions<QuestionBankDBContext> options) : base(options) { }
 
     /// <summary>
     /// 题目表，存储所有题目信息

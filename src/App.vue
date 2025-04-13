@@ -3,8 +3,7 @@ import { ref, onMounted, getCurrentInstance, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from './stores/userStore'
 import { ElMessage } from 'element-plus'
-import { createApp } from 'vue'
-import App from './App.vue'
+import { authService } from './services/AuthService'
 
 const router = useRouter()
 const route = useRoute()
@@ -61,14 +60,14 @@ const handleCommand = (command: string) => {
   switch (command) {
     case 'logout':
       userStore.logout()
-      router.push('/practice')
+      ElMessage.success('已成功退出登录')
+      router.push('/login')
       break
-    case 'switchRole':
-      const currentPath = route.path
-      userStore.login(userStore.userInfo.value.role === 'admin' ? 'user' : 'admin')
-      router.push('/').then(() => {
-        router.push(currentPath)
-      })
+    case 'login':
+      router.push('/login')
+      break
+    case 'profile':
+      ElMessage.info('用户信息功能开发中')
       break
   }
 }
@@ -119,7 +118,8 @@ if (instance) {
             </template>
           </el-menu>
           <div class="user-info">
-            <el-dropdown @command="handleCommand">
+            <!-- 已登录状态 -->
+            <el-dropdown v-if="userStore.isLoggedIn()" @command="handleCommand">
               <span class="user-dropdown">
                 <el-avatar :size="32" :src="userStore.userInfo.value.avatar">
                   {{ userStore.userInfo.value.username.charAt(0) }}
@@ -128,8 +128,8 @@ if (instance) {
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="switchRole">
-                    <el-icon><Switch /></el-icon>切换身份
+                  <el-dropdown-item command="profile">
+                    <el-icon><User /></el-icon>个人信息
                   </el-dropdown-item>
                   <el-dropdown-item divided command="logout">
                     <el-icon><SwitchButton /></el-icon>退出登录
@@ -137,6 +137,9 @@ if (instance) {
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
+
+            <!-- 未登录状态 -->
+            <el-button v-else type="primary" @click="router.push('/login')">登录</el-button>
           </div>
         </div>
       </el-header>

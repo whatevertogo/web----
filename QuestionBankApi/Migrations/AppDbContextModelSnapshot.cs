@@ -10,8 +10,8 @@ using QuestionBankApi.Data;
 
 namespace QuestionBankApi.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(QuestionBankDBContext))]
+    partial class QuestionBankDBContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {

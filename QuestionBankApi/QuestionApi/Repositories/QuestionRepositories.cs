@@ -14,13 +14,13 @@ using QuestionBankApi.Models;
 /// </summary>
 public class QuestionRepository : IQuestionRepository
 {
-    private readonly AppDbContext _context;
+    private readonly QuestionBankDBContext _context;
 
     /// <summary>
     /// 构造函数，注入数据库上下文
     /// </summary>
     /// <param name="context">数据库上下文实例</param>
-    public QuestionRepository(AppDbContext context)
+    public QuestionRepository(QuestionBankDBContext context)
     {
         _context = context;
     }
