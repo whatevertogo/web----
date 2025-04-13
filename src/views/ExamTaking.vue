@@ -10,9 +10,36 @@ import { Timer, Check, Back } from '@element-plus/icons-vue'
 interface Exam {
   id: number;
   title: string;
-  description: string;
-  questions: any[];
-  [key: string]: any;
+  description?: string;
+  questions: Array<{
+    questionId: number;
+    score: number;
+    question: {
+      type: QuestionType;
+      content: string;
+      optionsJson?: string;
+      answersJson?: string;
+      analysis?: string;
+    };
+  }>;
+  totalScore?: number;
+  deadline?: string;
+  isSubmitted?: boolean;
+}
+
+interface ExamResult {
+  score: number;
+  totalScore: number;
+  correctCount: number;
+  questionCount: number;
+  completionTime: number;
+  submittedAt: string;
+  answers: Array<{
+    questionId: number;
+    answer: string;
+    isCorrect: boolean;
+    score: number;
+  }>;
 }
 
 // 获取用户信息和路由
@@ -34,24 +61,24 @@ const examList = ref<Exam[]>([])
 const loading = ref(false)
 
 // 当前试卷
-const currentExam = ref(null)
+const currentExam = ref<Exam | null>(null)
 const examLoading = ref(false)
 
 // 答题状态
-const answers = reactive({})
+const answers = reactive<Record<number, string>>({})
 const startTime = ref(Date.now())
 const timeSpent = ref(0)
-const timerInterval = ref(null)
+const timerInterval = ref<ReturnType<typeof setInterval> | null>(null)
 
 // 结果
-const examResult = ref(null)
+const examResult = ref<ExamResult | null>(null)
 const showResult = ref(false)
 
 // 加载试卷列表
 const loadExams = async () => {
   loading.value = true
   try {
-    const response = await examService.getStudentExams<Exam[]>()
+    const response = await examService.getStudentExams()
     // 确保每个试卷的questions字段都是数组
     examList.value = Array.isArray(response) ? response.map(exam => ({
       ...exam,
@@ -77,12 +104,12 @@ const loadExams = async () => {
 const loadExam = async (id: number) => {
   examLoading.value = true
   try {
-    const response = await examService.getExamById<Exam>(id)
+    const response = await examService.getExamById(id)
     currentExam.value = response
     // 初始化答案
     if (currentExam.value?.questions) {
-      currentExam.value.questions.forEach((question: any) => {
-        answers[question.id] = ''
+      currentExam.value.questions.forEach((question) => {
+        answers[question.questionId] = ''
       })
     }
 
@@ -143,6 +170,11 @@ const backToList = () => {
 // 提交试卷
 const submitExam = async () => {
   try {
+    if (!currentExam.value) {
+      ElMessage.error('试卷数据不存在')
+      return
+    }
+
     await ElMessageBox.confirm('确定要提交试卷吗？提交后将无法修改答案。', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
@@ -175,7 +207,7 @@ const submitExam = async () => {
 }
 
 // 获取选项标签
-const getOptionLabel = (index) => {
+const getOptionLabel = (index: number): string => {
   return String.fromCharCode(65 + index) // A, B, C, D...
 }
 
@@ -193,7 +225,7 @@ onUnmounted(() => {
 const getAnswerResult = (questionId: number) => {
   if (!examResult.value) return { isCorrect: false, score: 0, answer: '' }
 
-  const answer = examResult.value.answers.find((a: any) => a.questionId === questionId)
+  const answer = examResult.value.answers.find(a => a.questionId === questionId)
   return answer || { isCorrect: false, score: 0, answer: '' }
 }
 </script>

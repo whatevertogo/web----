@@ -1,17 +1,51 @@
 import { api } from './api';
 
+// 响应接口定义
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
+interface ExamResponse {
+  id: number;
+  title: string;
+  description?: string;
+  questions: any[];
+  totalScore?: number;
+  deadline?: string;
+  isSubmitted?: boolean;
+}
+
+interface ExamSubmissionResponse {
+  data: {
+    score: number;
+    totalScore: number;
+    correctCount: number;
+    questionCount: number;
+    completionTime: number;
+    submittedAt: string;
+    answers: Array<{
+      questionId: number;
+      answer: string;
+      isCorrect: boolean;
+      score: number;
+    }>;
+  };
+}
+
 // 试卷服务
 export const examService = {
   // 获取所有试卷（管理员）
-  async getExams() {
+  async getExams(): Promise<ApiResponse<ExamResponse[]>> {
     try {
-      const response = await api.get('/exams');
+      const response = await api.get<ApiResponse<ExamResponse[]>>('/exams');
       console.log('获取试卷原始响应:', response);
 
       // 如果返回空数组，创建一个空数组作为默认值
       if (!response) {
         console.warn('试卷响应为空');
-        return { data: [] };
+        return { success: true, data: [] };
       }
 
       // 处理不同的响应格式
@@ -20,26 +54,27 @@ export const examService = {
         return response;
       } else if (Array.isArray(response)) {
         // 如果响应本身就是数组，将其包装为标准格式
-        return { data: response };
+        return { success: true, data: response };
       } else if (response.data === null || response.data === undefined) {
         // 如果 data 字段为空，返回空数组
         console.warn('试卷响应的 data 字段为空');
-        return { data: [] };
+        return { success: true, data: [] };
       }
 
       // 默认情况，直接返回原始响应
-      return response;
+      return response as ApiResponse<ExamResponse[]>;
     } catch (error) {
       console.error('获取试卷列表失败:', error);
       // 返回空数组作为默认值，避免前端报错
-      return { data: [] };
+      return { success: false, data: [] };
     }
   },
 
   // 获取学生的试卷
-  async getStudentExams<T = any>() {
+  async getStudentExams(): Promise<ExamResponse[]> {
     try {
-      return await api.get<T>('/exams');
+      const response = await api.get<ExamResponse[]>('/exams');
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error('获取学生试卷列表失败:', error);
       throw error;
@@ -47,9 +82,9 @@ export const examService = {
   },
 
   // 获取试卷详情
-  async getExamById<T = any>(id: number) {
+  async getExamById(id: number): Promise<ExamResponse> {
     try {
-      return await api.get<T>(`/exams/${id}`);
+      return await api.get<ExamResponse>(`/exams/${id}`);
     } catch (error) {
       console.error(`获取试卷 ${id} 详情失败:`, error);
       throw error;
@@ -89,10 +124,10 @@ export const examService = {
   },
 
   // 获取学生列表
-  async getStudents() {
+  async getStudents(): Promise<ApiResponse<any[]>> {
     try {
       console.log('获取学生列表...');
-      const response = await api.get('/users/students');
+      const response = await api.get<ApiResponse<any[]>>('/users/students');
       console.log('获取学生列表响应:', response);
 
       // 处理不同的响应格式
@@ -101,15 +136,15 @@ export const examService = {
         return response;
       } else if (Array.isArray(response)) {
         // 如果响应本身就是数组，将其包装为标准格式
-        return { data: response };
+        return { success: true, data: response };
       } else if (!response || !response.data) {
         // 如果没有数据，返回空数组
         console.warn('学生列表为空');
-        return { data: [] };
+        return { success: true, data: [] };
       }
 
       // 默认情况，直接返回原始响应
-      return response;
+      return response as ApiResponse<any[]>;
     } catch (error) {
       console.error('获取学生列表失败:', error);
       throw error; // 抛出错误，让调用者处理
@@ -130,9 +165,9 @@ export const examService = {
   },
 
   // 提交试卷
-  async submitExam(examId: number, submission: any) {
+  async submitExam(examId: number, submission: any): Promise<ExamSubmissionResponse> {
     try {
-      return await api.post(`/exams/${examId}/submit`, submission);
+      return await api.post<ExamSubmissionResponse>(`/exams/${examId}/submit`, submission);
     } catch (error) {
       console.error(`提交试卷 ${examId} 失败:`, error);
       throw error;
