@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from './stores/userStore'
 import { ElMessage } from 'element-plus'
 import { authService } from './services/AuthService'
-import { Document, Files, Reading, Edit, List, Download, User, SwitchButton } from '@element-plus/icons-vue'
+import { Document, Files, Reading, Edit, List, Download, User, SwitchButton, UserFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -31,6 +31,9 @@ const updateActiveIndex = (path: string) => {
       break
     case '/export':
       activeIndex.value = '3'
+      break
+    case '/student-register':
+      activeIndex.value = 'student-register'
       break
     default:
       activeIndex.value = ''
@@ -65,6 +68,9 @@ const handleSelect = (key: string) => {
       break
     case '3':
       router.push('/export')
+      break
+    case 'student-register':
+      router.push('/student-register')
       break
   }
 }
@@ -135,6 +141,10 @@ if (instance) {
               <el-menu-item index="exam-manage">
                 <el-icon><Files /></el-icon>
                 <span>试卷管理</span>
+              </el-menu-item>
+              <el-menu-item index="student-register">
+                <el-icon><UserFilled /></el-icon>
+                <span>注册学生</span>
               </el-menu-item>
             </template>
           </el-menu>

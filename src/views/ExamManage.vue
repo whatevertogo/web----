@@ -49,6 +49,7 @@ const selectedQuestions = ref<TableQuestion[]>([])
 // 学生列表
 const studentList = ref([])
 const selectedStudents = ref([])
+const studentLoading = ref(false)
 
 // 对话框控制
 const examDialogVisible = ref(false)
@@ -64,7 +65,31 @@ const loadExams = async () => {
   loading.value = true
   try {
     const response = await examService.getExams()
-    examList.value = response.data || []
+    console.log('原始试卷数据:', response)
+
+    // 处理试卷数据
+    if (response && response.data && Array.isArray(response.data)) {
+      // 处理每个试卷的题目数据
+      examList.value = response.data.map(exam => {
+        // 确保 questions 存在且是数组
+        const questions = Array.isArray(exam.questions) ? exam.questions : []
+
+        // 返回处理后的试卷数据
+        return {
+          ...exam,
+          questions: questions.map(q => ({
+            ...q,
+            // 如果 question 为 null，使用一个默认值
+            question: q.question || `题目 ID: ${q.questionId}`
+          }))
+        }
+      })
+
+      console.log('处理后的试卷数据:', examList.value)
+    } else {
+      console.warn('试卷数据格式不符合预期:', response)
+      examList.value = []
+    }
   } catch (error) {
     console.error('加载试卷失败:', error)
     ElMessage.error('加载试卷失败')
@@ -76,12 +101,32 @@ const loadExams = async () => {
 
 // 加载学生列表
 const loadStudents = async () => {
+  studentLoading.value = true
+  studentList.value = [] // 重置学生列表
+
   try {
+    console.log('开始加载学生列表...')
     const response = await examService.getStudents()
-    studentList.value = response.data
+    console.log('学生数据响应:', response)
+
+    // 处理学生数据
+    if (response && response.data) {
+      if (Array.isArray(response.data)) {
+        studentList.value = response.data
+        console.log('学生列表加载成功，共 ' + studentList.value.length + ' 名学生')
+      } else {
+        console.warn('学生数据不是数组:', response.data)
+        ElMessage.warning('学生数据格式不正确')
+      }
+    } else {
+      console.warn('学生数据为空')
+      ElMessage.info('没有找到学生数据')
+    }
   } catch (error) {
     console.error('加载学生列表失败:', error)
-    ElMessage.error('加载学生列表失败')
+    ElMessage.error(`加载学生列表失败: ${error.message || '未知错误'}`)
+  } finally {
+    studentLoading.value = false
   }
 }
 
@@ -97,13 +142,43 @@ const createExam = () => {
 }
 
 // 编辑试卷
-const editExam = (exam) => {
+const editExam = async (exam) => {
+  console.log('编辑试卷:', exam)
   examForm.id = exam.id
   examForm.title = exam.title
   examForm.description = exam.description
   examForm.deadline = exam.deadline
-  examForm.questions = [...exam.questions]
-  selectedQuestions.value = [...exam.questions.map(q => q.question)]
+  examForm.questions = [...(Array.isArray(exam.questions) ? exam.questions : [])]
+
+  // 如果题目数据不完整，需要从后端获取完整的题目数据
+  try {
+    // 先将现有的题目数据保存下来
+    const questionIds = exam.questions.map(q => q.questionId)
+    console.log('需要获取的题目 ID:', questionIds)
+
+    // 获取所有题目
+    const allQuestions = await questionService.getQuestions()
+    console.log('获取到的所有题目:', allQuestions)
+
+    // 筛选出试卷中的题目
+    const examQuestions = allQuestions.filter(q => questionIds.includes(q.id))
+    console.log('试卷中的题目:', examQuestions)
+
+    // 更新选中的题目
+    selectedQuestions.value = examQuestions.map(q => ({
+      id: q.id,
+      type: q.type,
+      question: q.question || q.content,
+      options: q.options || [],
+      answers: q.answers || [],
+      analysis: q.analysis || ''
+    }))
+  } catch (error) {
+    console.error('获取题目数据失败:', error)
+    ElMessage.warning('获取题目数据失败，请重新选择题目')
+    selectedQuestions.value = []
+  }
+
   examDialogVisible.value = true
 }
 
@@ -140,6 +215,14 @@ const saveExam = async () => {
   }
 
   try {
+    // 检查题目是否都有有效的ID
+    const invalidQuestions = selectedQuestions.value.filter(q => !q.id)
+    if (invalidQuestions.length > 0) {
+      console.error('存在无效的题目:', invalidQuestions)
+      ElMessage.warning('部分题目数据不完整，请重新选择')
+      return
+    }
+
     const examData = {
       id: examForm.id,
       title: examForm.title,
@@ -152,21 +235,28 @@ const saveExam = async () => {
       }))
     }
 
+    console.log('准备保存的试卷数据:', examData)
+
+    let response
     if (examForm.id) {
-      await examService.updateExam(examData)
+      response = await examService.updateExam(examData)
+      console.log('更新试卷响应:', response)
       ElMessage.success('更新试卷成功')
     } else {
-      await examService.createExam(examData)
+      response = await examService.createExam(examData)
+      console.log('创建试卷响应:', response)
       ElMessage.success('创建试卷成功')
     }
 
     examDialogVisible.value = false
+
+    // 添加更长的延时，确保后端处理完成
     setTimeout(() => {
       loadExams()
-    }, 500) // 添加延时，确保后端处理完成
+    }, 1000)
   } catch (error) {
     console.error('保存试卷失败:', error)
-    ElMessage.error('保存试卷失败')
+    ElMessage.error(`保存试卷失败: ${error.message || '未知错误'}`)
   }
 }
 
@@ -183,7 +273,16 @@ const openQuestionDialog = async () => {
 
 // 选择题目
 const selectQuestions = (questions) => {
-  selectedQuestions.value = questions
+  // 确保题目有正确的属性
+  selectedQuestions.value = questions.map(q => ({
+    id: q.id,
+    type: q.type,
+    question: q.question || q.content,
+    options: q.options || [],
+    answers: q.answers || [],
+    analysis: q.analysis || ''
+  }))
+  console.log('选中的题目:', selectedQuestions.value)
   questionDialogVisible.value = false
 }
 
@@ -193,47 +292,197 @@ const removeQuestion = (index) => {
 }
 
 // 发布试卷
-const publishExam = (exam) => {
+const publishExam = async (exam) => {
+  if (!exam || !exam.id) {
+    ElMessage.warning('试卷数据无效')
+    return
+  }
+
+  console.log('准备发布试卷:', exam)
   selectedStudents.value = []
-  loadStudents()
-  studentDialogVisible.value = true
   examForm.id = exam.id
+
+  try {
+    // 先加载学生数据，然后再打开对话框
+    await loadStudents()
+
+    // 确保有学生数据
+    if (studentList.value.length === 0) {
+      ElMessage.warning('没有找到学生数据，请先添加学生')
+      return
+    }
+
+    studentDialogVisible.value = true
+  } catch (error) {
+    console.error('加载学生数据失败:', error)
+    ElMessage.error(`加载学生数据失败: ${error.message || '未知错误'}`)
+  }
 }
 
 // 分配试卷给学生
 const assignExam = async () => {
+  if (!examForm.id) {
+    ElMessage.warning('试卷ID无效')
+    return
+  }
+
   if (selectedStudents.value.length === 0) {
     ElMessage.warning('请选择至少一名学生')
     return
   }
 
   try {
-    await examService.assignExam(examForm.id, selectedStudents.value)
-    ElMessage.success('发布试卷成功')
-    studentDialogVisible.value = false
-    loadExams()
+    console.log('准备分配试卷:', {
+      examId: examForm.id,
+      studentIds: selectedStudents.value
+    })
+
+    const response = await examService.assignExam(examForm.id, selectedStudents.value)
+    console.log('分配试卷响应:', response)
+
+    if (response && response.success) {
+      ElMessage.success(response.message || '发布试卷成功')
+      studentDialogVisible.value = false
+
+      // 添加延时，确保后端处理完成
+      setTimeout(() => {
+        loadExams()
+      }, 1000)
+    } else {
+      ElMessage.error(response?.message || '发布试卷失败，请重试')
+    }
   } catch (error) {
     console.error('发布试卷失败:', error)
-    ElMessage.error('发布试卷失败')
+    ElMessage.error(`发布试卷失败: ${error.message || '未知错误'}`)
   }
 }
 
 // 查看试卷统计
+const statisticsLoading = ref(false)
+const statisticsError = ref(false)
+
 const viewStatistics = async (exam) => {
+  if (!exam || !exam.id) {
+    ElMessage.warning('试卷数据无效')
+    return
+  }
+
+  statisticsLoading.value = true
+  statisticsError.value = false
+  currentExamStatistics.value = null
+  statisticsDialogVisible.value = true
+
   try {
+    console.log(`准备获取试卷 ${exam.id} 的统计信息`)
     const response = await examService.getExamStatistics(exam.id)
-    currentExamStatistics.value = response.data
-    statisticsDialogVisible.value = true
+    console.log('获取的统计信息:', response)
+
+    if (response && response.data) {
+      currentExamStatistics.value = response.data
+
+      // 如果没有试卷标题，使用当前试卷的标题
+      if (!currentExamStatistics.value.examTitle) {
+        currentExamStatistics.value.examTitle = exam.title
+      }
+
+      // 确保分数分布数据存在
+      if (!currentExamStatistics.value.scoreDistribution) {
+        currentExamStatistics.value.scoreDistribution = {}
+        console.warn('缺少分数分布数据')
+      }
+
+      console.log('统计数据加载成功:', currentExamStatistics.value)
+    } else {
+      statisticsError.value = true
+      ElMessage.warning('试卷统计数据为空，可能是因为还没有学生提交试卷')
+    }
   } catch (error) {
     console.error('获取统计信息失败:', error)
-    ElMessage.error('获取统计信息失败')
+    statisticsError.value = true
+    ElMessage.error(`获取统计信息失败: ${error.message || '未知错误'}`)
+  } finally {
+    statisticsLoading.value = false
   }
 }
 
 // 导出成绩
-const exportResults = (exam) => {
-  // TODO: 实现导出成绩功能
-  ElMessage.info('导出成绩功能开发中')
+const exportLoading = ref(false)
+
+const exportResults = async (examId) => {
+  if (!examId) {
+    ElMessage.warning('试卷ID无效')
+    return
+  }
+
+  exportLoading.value = true
+  try {
+    console.log(`准备导出试卷 ${examId} 的成绩`)
+
+    // 如果有统计数据，直接生成CSV文件
+    if (currentExamStatistics.value && currentExamStatistics.value.studentResults) {
+      // 生成CSV内容
+      const headers = ['\u5b66生ID', '\u5b66生姓名', '\u5f97分', '\u603b分', '\u6b63确题数', '\u9898目总数', '\u5b8c成时间(分钟)', '\u63d0交时间']
+      const rows = currentExamStatistics.value.studentResults.map(student => [
+        student.studentId,
+        student.studentName,
+        student.score,
+        student.totalScore,
+        student.correctCount,
+        student.questionCount,
+        student.completionTime,
+        student.submittedAt
+      ])
+
+      // 添加标题行
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n')
+
+      // 创建Blob对象
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+
+      // 创建下载链接
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `试卷成绩-${currentExamStatistics.value.examTitle || examId}-${new Date().toISOString().split('T')[0]}.csv`)
+      document.body.appendChild(link)
+
+      // 模拟点击下载
+      link.click()
+
+      // 清理
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      ElMessage.success('成绩导出成功')
+    } else {
+      // 如果没有统计数据，尝试从后端获取
+      const response = await examService.exportExamResults(examId)
+      console.log('导出成绩响应:', response)
+
+      // 如果是Blob数据，直接下载
+      if (response instanceof Blob) {
+        const url = URL.createObjectURL(response)
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', `试卷成绩-${examId}-${new Date().toISOString().split('T')[0]}.csv`)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        ElMessage.success('成绩导出成功')
+      } else {
+        ElMessage.success('成绩导出成功')
+      }
+    }
+  } catch (error) {
+    console.error('导出成绩失败:', error)
+    ElMessage.error(`导出成绩失败: ${error.message || '未知错误'}`)
+  } finally {
+    exportLoading.value = false
+  }
 }
 
 // 页面加载时获取试卷列表
@@ -250,7 +499,7 @@ onMounted(() => {
     </div>
 
     <el-card class="exam-list" v-loading="loading">
-      <template v-if="examList.length === 0">
+      <template v-if="!examList || examList.length === 0">
         <div class="empty-data">
           <el-empty description="暂无试卷数据" />
         </div>
@@ -261,7 +510,7 @@ onMounted(() => {
         <el-table-column prop="description" label="描述" min-width="200" />
         <el-table-column label="题目数量" width="100">
           <template #default="scope">
-            {{ scope.row.questions.length }}
+            {{ Array.isArray(scope.row.questions) ? scope.row.questions.length : 0 }}
           </template>
         </el-table-column>
         <el-table-column label="总分" width="80">
@@ -402,22 +651,31 @@ onMounted(() => {
       title="选择学生"
       width="600px"
     >
-      <el-table
-        :data="studentList"
-        style="width: 100%"
-        @selection-change="selectedStudents = $event.map(item => item.id)"
-        row-key="id"
-      >
-        <el-table-column type="selection" width="55" />
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="username" label="用户名" min-width="150" />
-        <el-table-column prop="name" label="姓名" min-width="150" />
-      </el-table>
+      <div v-loading="studentLoading">
+        <template v-if="!studentList || studentList.length === 0">
+          <div class="empty-data">
+            <el-empty description="暂无学生数据" />
+          </div>
+        </template>
+
+        <el-table
+          v-else
+          :data="studentList"
+          style="width: 100%"
+          @selection-change="selectedStudents = $event.map(item => item.id)"
+          row-key="id"
+        >
+          <el-table-column type="selection" width="55" />
+          <el-table-column prop="id" label="ID" width="80" />
+          <el-table-column prop="username" label="用户名" min-width="150" />
+          <el-table-column prop="name" label="姓名" min-width="150" />
+        </el-table>
+      </div>
 
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="studentDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="assignExam">发布</el-button>
+          <el-button type="primary" @click="assignExam" :disabled="!studentList || studentList.length === 0 || selectedStudents.length === 0">发布</el-button>
         </span>
       </template>
     </el-dialog>
@@ -427,73 +685,134 @@ onMounted(() => {
       v-model="statisticsDialogVisible"
       title="试卷统计"
       width="900px"
+      destroy-on-close
     >
-      <div v-if="currentExamStatistics" class="statistics-container">
-        <el-descriptions title="基本信息" :column="3" border>
-          <el-descriptions-item label="试卷标题">{{ currentExamStatistics.examTitle }}</el-descriptions-item>
-          <el-descriptions-item label="参与学生数">{{ currentExamStatistics.studentCount }}</el-descriptions-item>
-          <el-descriptions-item label="已提交数">{{ currentExamStatistics.submittedCount }}</el-descriptions-item>
-          <el-descriptions-item label="平均分">{{ currentExamStatistics.averageScore.toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="最高分">{{ currentExamStatistics.highestScore }}</el-descriptions-item>
-          <el-descriptions-item label="最低分">{{ currentExamStatistics.lowestScore }}</el-descriptions-item>
-          <el-descriptions-item label="及格率">{{ (currentExamStatistics.passRate * 100).toFixed(2) }}%</el-descriptions-item>
-        </el-descriptions>
-
-        <h3>分数分布</h3>
-        <div class="score-distribution">
-          <el-progress
-            v-for="(count, range) in currentExamStatistics.scoreDistribution"
-            :key="range"
-            :percentage="currentExamStatistics.studentCount ? (count / currentExamStatistics.studentCount) * 100 : 0"
-            :color="getScoreColor(range as string)"
-            :stroke-width="20"
-            :format="() => `${range}: ${count}人 (${((count / currentExamStatistics.studentCount) * 100).toFixed(2)}%)`"
-            style="margin-bottom: 10px"
-          />
+      <div v-loading="statisticsLoading" class="statistics-container">
+        <!-- 错误提示 -->
+        <div v-if="statisticsError" class="statistics-error">
+          <el-empty description="获取统计数据失败" :image-size="200">
+            <template #description>
+              <p>获取统计数据失败，请稍后重试</p>
+            </template>
+          </el-empty>
         </div>
 
-        <h3>题目正确率</h3>
-        <el-table :data="currentExamStatistics.questionStatistics" style="width: 100%" row-key="order">
-          <el-table-column prop="order" label="序号" width="60" />
-          <el-table-column label="题型" width="100">
-            <template #default="scope">
-              {{ typeMap[scope.row.type] }}
+        <!-- 空数据提示 -->
+        <div v-else-if="!statisticsLoading && !currentExamStatistics" class="statistics-empty">
+          <el-empty description="暂无统计数据" :image-size="200">
+            <template #description>
+              <p>试卷暂无统计数据，可能是因为还没有学生提交试卷</p>
             </template>
-          </el-table-column>
-          <el-table-column prop="content" label="题目内容" min-width="300" />
-          <el-table-column label="正确率" width="180">
-            <template #default="scope">
-              <el-progress
-                :percentage="scope.row.correctRate * 100"
-                :color="scope.row.correctRate > 0.6 ? '#67C23A' : scope.row.correctRate > 0.3 ? '#E6A23C' : '#F56C6C'"
-              />
-            </template>
-          </el-table-column>
-          <el-table-column label="正确/错误" width="100">
-            <template #default="scope">
-              {{ scope.row.correctCount }}/{{ scope.row.incorrectCount }}
-            </template>
-          </el-table-column>
-        </el-table>
+          </el-empty>
+        </div>
 
-        <h3>学生成绩</h3>
-        <el-table :data="currentExamStatistics.studentResults" style="width: 100%">
-          <el-table-column prop="studentId" label="学生ID" width="80" />
-          <el-table-column prop="studentName" label="学生姓名" min-width="150" />
-          <el-table-column label="得分" width="100">
-            <template #default="scope">
-              {{ scope.row.score }}/{{ scope.row.totalScore }}
+        <!-- 统计数据内容 -->
+        <div v-else-if="currentExamStatistics" class="statistics-content">
+          <!-- 基本信息卡片 -->
+          <el-card class="statistics-card">
+            <template #header>
+              <div class="card-header">
+                <h3>基本信息</h3>
+              </div>
             </template>
-          </el-table-column>
-          <el-table-column label="正确题数" width="100">
-            <template #default="scope">
-              {{ scope.row.correctCount }}/{{ scope.row.questionCount }}
+            <el-descriptions :column="3" border>
+              <el-descriptions-item label="试卷标题">{{ currentExamStatistics.examTitle }}</el-descriptions-item>
+              <el-descriptions-item label="参与学生数">{{ currentExamStatistics.studentCount }}</el-descriptions-item>
+              <el-descriptions-item label="已提交数">{{ currentExamStatistics.submittedCount }}</el-descriptions-item>
+              <el-descriptions-item label="平均分">{{ currentExamStatistics.averageScore ? currentExamStatistics.averageScore.toFixed(2) : '0.00' }}</el-descriptions-item>
+              <el-descriptions-item label="最高分">{{ currentExamStatistics.highestScore || '0' }}</el-descriptions-item>
+              <el-descriptions-item label="最低分">{{ currentExamStatistics.lowestScore || '0' }}</el-descriptions-item>
+              <el-descriptions-item label="及格率">{{ currentExamStatistics.passRate ? (currentExamStatistics.passRate * 100).toFixed(2) : '0.00' }}%</el-descriptions-item>
+            </el-descriptions>
+          </el-card>
+
+          <!-- 分数分布卡片 -->
+          <el-card class="statistics-card">
+            <template #header>
+              <div class="card-header">
+                <h3>分数分布</h3>
+              </div>
             </template>
-          </el-table-column>
-          <el-table-column prop="completionTime" label="完成时间(分钟)" width="150" />
-          <el-table-column prop="submittedAt" label="提交时间" min-width="180" />
-        </el-table>
+            <div class="score-distribution">
+              <el-progress
+                v-for="(count, range) in currentExamStatistics.scoreDistribution"
+                :key="range"
+                :percentage="currentExamStatistics.studentCount ? (count / currentExamStatistics.studentCount) * 100 : 0"
+                :color="getScoreColor(range as string)"
+                :stroke-width="20"
+                :format="() => `${range}: ${count}人 (${currentExamStatistics.studentCount ? ((count / currentExamStatistics.studentCount) * 100).toFixed(2) : '0.00'}%)`"
+                style="margin-bottom: 10px"
+              />
+            </div>
+          </el-card>
+
+          <!-- 题目正确率卡片 -->
+          <el-card class="statistics-card" v-if="currentExamStatistics.questionStatistics && currentExamStatistics.questionStatistics.length > 0">
+            <template #header>
+              <div class="card-header">
+                <h3>题目正确率</h3>
+              </div>
+            </template>
+            <el-table :data="currentExamStatistics.questionStatistics" style="width: 100%" row-key="order">
+              <el-table-column prop="order" label="序号" width="60" />
+              <el-table-column label="题型" width="100">
+                <template #default="scope">
+                  {{ typeMap[scope.row.type] || '未知题型' }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="content" label="题目内容" min-width="300" />
+              <el-table-column label="正确率" width="180">
+                <template #default="scope">
+                  <el-progress
+                    :percentage="scope.row.correctRate * 100"
+                    :color="scope.row.correctRate > 0.6 ? '#67C23A' : scope.row.correctRate > 0.3 ? '#E6A23C' : '#F56C6C'"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="正确/错误" width="100">
+                <template #default="scope">
+                  {{ scope.row.correctCount }}/{{ scope.row.incorrectCount }}
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+
+          <!-- 学生成绩卡片 -->
+          <el-card class="statistics-card" v-if="currentExamStatistics.studentResults && currentExamStatistics.studentResults.length > 0">
+            <template #header>
+              <div class="card-header">
+                <h3>学生成绩</h3>
+                <el-button type="primary" size="small" @click="exportResults(currentExamStatistics.examId)" :loading="exportLoading">导出成绩</el-button>
+              </div>
+            </template>
+            <el-table :data="currentExamStatistics.studentResults" style="width: 100%" row-key="studentId">
+              <el-table-column prop="studentId" label="学生ID" width="80" />
+              <el-table-column prop="studentName" label="学生姓名" min-width="150" />
+              <el-table-column label="得分" width="100">
+                <template #default="scope">
+                  <span :class="{ 'score-pass': scope.row.score >= 60, 'score-fail': scope.row.score < 60 }">
+                    {{ scope.row.score }}/{{ scope.row.totalScore }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column label="正确题数" width="100">
+                <template #default="scope">
+                  {{ scope.row.correctCount }}/{{ scope.row.questionCount }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="completionTime" label="完成时间(分钟)" width="150" />
+              <el-table-column prop="submittedAt" label="提交时间" min-width="180" />
+            </el-table>
+          </el-card>
+        </div>
       </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="statisticsDialogVisible = false">关闭</el-button>
+          <el-button type="primary" @click="exportResults(currentExamStatistics?.examId)" :loading="exportLoading" :disabled="!currentExamStatistics || !currentExamStatistics.studentResults || currentExamStatistics.studentResults.length === 0">导出成绩</el-button>
+        </span>
+      </template>
     </el-dialog>
   </div>
 </template>
@@ -547,15 +866,49 @@ onMounted(() => {
 }
 
 .statistics-container h3 {
-  margin: 20px 0 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #EBEEF5;
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.statistics-error,
+.statistics-empty {
+  padding: 40px 0;
+  text-align: center;
+}
+
+.statistics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.statistics-card {
+  margin-bottom: 0;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .score-distribution {
-  padding: 10px;
+  padding: 15px;
   background-color: #F5F7FA;
   border-radius: 4px;
+}
+
+.score-pass {
+  color: #67C23A;
+  font-weight: bold;
+}
+
+.score-fail {
+  color: #F56C6C;
+  font-weight: bold;
 }
 </style>
 

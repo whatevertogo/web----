@@ -70,7 +70,16 @@ const resetFilter = () => {
 
 // 处理选择变化
 const handleSelectionChange = (selection: TableQuestion[]) => {
-  currentSelection.value = selection
+  // 确保选中的题目有正确的属性
+  currentSelection.value = selection.map(q => ({
+    id: q.id,
+    type: q.type,
+    question: q.question || q.content,
+    options: q.options || [],
+    answers: q.answers || [],
+    analysis: q.analysis || ''
+  }))
+  console.log('当前选中的题目:', currentSelection.value)
 }
 
 // 确认选择

@@ -19,6 +19,7 @@ using QuestionBankApi.Data;
 using QuestionBankApi.Services;
 using QuestionBankApi.LoginSystemApi.Services;
 using QuestionBankApi.LoginSystemApi.Helpers;
+using QuestionBankApi;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -97,6 +98,9 @@ var app = builder.Build();
 
 // 初始化数据库
 InitializeDatabase(app);
+
+// 添加测试学生用户
+AddStudents.AddTestStudents(app);
 
 // 如果是开发环境，启用Swagger UI
 if (app.Environment.IsDevelopment())

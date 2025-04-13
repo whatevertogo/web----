@@ -6,10 +6,28 @@ export const examService = {
   async getExams() {
     try {
       const response = await api.get('/exams');
+      console.log('获取试卷原始响应:', response);
+
       // 如果返回空数组，创建一个空数组作为默认值
-      if (!response || !response.data) {
+      if (!response) {
+        console.warn('试卷响应为空');
         return { data: [] };
       }
+
+      // 处理不同的响应格式
+      if (response.success && Array.isArray(response.data)) {
+        // 标准格式，直接返回
+        return response;
+      } else if (Array.isArray(response)) {
+        // 如果响应本身就是数组，将其包装为标准格式
+        return { data: response };
+      } else if (response.data === null || response.data === undefined) {
+        // 如果 data 字段为空，返回空数组
+        console.warn('试卷响应的 data 字段为空');
+        return { data: [] };
+      }
+
+      // 默认情况，直接返回原始响应
       return response;
     } catch (error) {
       console.error('获取试卷列表失败:', error);
@@ -41,7 +59,9 @@ export const examService = {
   // 创建试卷
   async createExam(examData: any) {
     try {
-      return await api.post('/exams', examData);
+      const response = await api.post('/exams', examData);
+      console.log('创建试卷响应:', response);
+      return response;
     } catch (error) {
       console.error('创建试卷失败:', error);
       throw error;
@@ -71,20 +91,41 @@ export const examService = {
   // 获取学生列表
   async getStudents() {
     try {
-      return await api.get('/users/students');
+      console.log('获取学生列表...');
+      const response = await api.get('/users/students');
+      console.log('获取学生列表响应:', response);
+
+      // 处理不同的响应格式
+      if (response && response.success && Array.isArray(response.data)) {
+        // 标准格式，直接返回
+        return response;
+      } else if (Array.isArray(response)) {
+        // 如果响应本身就是数组，将其包装为标准格式
+        return { data: response };
+      } else if (!response || !response.data) {
+        // 如果没有数据，返回空数组
+        console.warn('学生列表为空');
+        return { data: [] };
+      }
+
+      // 默认情况，直接返回原始响应
+      return response;
     } catch (error) {
       console.error('获取学生列表失败:', error);
-      throw error;
+      throw error; // 抛出错误，让调用者处理
     }
   },
 
   // 分配试卷给学生
   async assignExam(examId: number, studentIds: number[]) {
     try {
-      return await api.post(`/exams/${examId}/assign`, { studentIds });
+      console.log(`准备分配试卷 ${examId} 给学生:`, studentIds);
+      const response = await api.post(`/exams/${examId}/assign`, { studentIds });
+      console.log(`分配试卷 ${examId} 响应:`, response);
+      return response;
     } catch (error) {
       console.error(`分配试卷 ${examId} 失败:`, error);
-      throw error;
+      throw error; // 抛出错误，让调用者处理
     }
   },
 
@@ -101,10 +142,13 @@ export const examService = {
   // 获取试卷统计信息
   async getExamStatistics(examId: number) {
     try {
-      return await api.get(`/exams/${examId}/statistics`);
+      console.log(`准备获取试卷 ${examId} 的统计信息`);
+      const response = await api.get(`/exams/${examId}/statistics`);
+      console.log(`获取试卷 ${examId} 统计信息响应:`, response);
+      return response;
     } catch (error) {
       console.error(`获取试卷 ${examId} 统计信息失败:`, error);
-      throw error;
+      throw error; // 抛出错误，让调用者处理
     }
   },
 
