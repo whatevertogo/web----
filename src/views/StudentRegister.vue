@@ -176,10 +176,10 @@ const registerForm = reactive({
 
 // 批量注册表单数据
 const batchForm = reactive({
-  prefix: 'student',
+  prefix: '23060',
   startIndex: 1,
   count: 10,
-  password: 'student123'
+  password: '123456'
 })
 
 // 已注册学生列表

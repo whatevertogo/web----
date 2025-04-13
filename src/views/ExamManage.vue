@@ -532,7 +532,7 @@ onMounted(() => {
         </el-table-column>
         <el-table-column label="操作" width="280">
           <template #default="scope">
-            <el-button-group>
+            <el-button-group style="display: flex; flex-wrap: wrap;">
               <el-button type="primary" :icon="Edit" size="small" @click="editExam(scope.row)">
                 编辑
               </el-button>
