@@ -1,50 +1,86 @@
-# .NET Core
-bin/
-obj/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-.vs/
-.vscode/
-*.dll
-*.exe
-*.pdb
-*.cache
-
-# Vue.js / Node.js
+# Node.js / TypeScript
 node_modules/
-dist/
-dist-ssr/
-*.local
-.env
-.env.*
-!.env.example
-
-# IDE
-.idea/
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
-
-# 日志文件
-*.log
-logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+coverage/
+.npm/
+dist/
+.eslintcache
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.DS_Store
 
-# 构建输出
-/build
-/out
+# TypeScript
+*.tsbuildinfo
+*.js.map
 
-# 测试覆盖率
-/coverage
+# Vue
+.DS_Store
+node_modules
+/dist
+.cache/
 
-# 其他
-*.bak
-*.tmp
-temp/
+# C# / .NET
+bin/
+obj/
+.vs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.dbmdl
+*.dbproj.schemaview
+*.jfm
+*.pfx
+*.publishsettings
+orleans.codegen.cs
+
+# IDE / Editor folders
+.idea/
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+# Local development settings
+*.Development.json
+Properties/launchSettings.json
+
+# Database
+*.mdf
+*.ldf
+*.ndf
+
+# Publish files
+publish/
+
+# Temporary files
+.temp
+.tmp
+.cache
