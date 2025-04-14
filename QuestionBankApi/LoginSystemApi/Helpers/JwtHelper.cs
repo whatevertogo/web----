@@ -50,18 +50,12 @@ public class JwtHelper : IJwtHelper
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? ""));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         
-        // 从配置中获取过期时间，默认为2小时
-        double expiresInHours;
-        if (!double.TryParse(_config["Jwt:ExpiresInHours"], out expiresInHours))
-        {
-            expiresInHours = 2;
-        }
-
+        // 设置令牌过期时间为10分钟
         var token = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],
             audience: _config["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.Now.AddHours(expiresInHours),
+            expires: DateTime.Now.AddMinutes(10),
             signingCredentials: creds
         );
 

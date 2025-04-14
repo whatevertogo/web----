@@ -299,6 +299,7 @@ public class ExamService : IExamService
         // 计算得分
         int totalScore = 0;
         int correctCount = 0;
+        var createdAnswers = new List<QuestionAnswer>(); // 用于暂存创建的答案实体
 
         foreach (var answerDto in dto.Answers)
         {
@@ -327,6 +328,7 @@ public class ExamService : IExamService
             };
 
             _db.QuestionAnswers.Add(answer);
+            createdAnswers.Add(answer); // 暂存创建的答案
 
             // 累计得分
             totalScore += score;
@@ -356,14 +358,12 @@ public class ExamService : IExamService
             Score = totalScore,
             CorrectCount = correctCount,
             QuestionCount = exam.ExamQuestions.Count,
-            Answers = dto.Answers.Select(a => new QuestionAnswerDto
+            Answers = createdAnswers.Select(ca => new QuestionAnswerDto // 使用暂存的答案信息
             {
-                QuestionId = a.QuestionId,
-                Answer = a.Answer,
-                IsCorrect = _db.QuestionAnswers
-                    .FirstOrDefault(qa => qa.SubmissionId == submission.Id && qa.QuestionId == a.QuestionId)?.IsCorrect ?? false,
-                Score = _db.QuestionAnswers
-                    .FirstOrDefault(qa => qa.SubmissionId == submission.Id && qa.QuestionId == a.QuestionId)?.Score ?? 0
+                QuestionId = ca.QuestionId,
+                Answer = ca.Answer,
+                IsCorrect = ca.IsCorrect,
+                Score = ca.Score
             }).ToList()
         };
     }
@@ -468,9 +468,35 @@ public class ExamService : IExamService
             statistics.QuestionStatistics.Add(questionStatistics);
         }
 
-        // 获取学生成绩
-        var results = await GetExamResultsAsync(examId);
-        statistics.StudentResults = results.ToList();
+        // 构建学生成绩列表 (替代 GetExamResultsAsync 调用)
+        var studentIds = submissions.Select(s => s.StudentId).Distinct().ToList();
+        var students = await _userDb.Users
+            .Where(u => studentIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.Username);
+
+        foreach (var submission in submissions)
+        {
+            var studentResult = new ExamResultDto
+            {
+                ExamId = examId,
+                StudentId = submission.StudentId,
+                StudentName = students.ContainsKey(submission.StudentId) ? students[submission.StudentId] : null,
+                SubmittedAt = submission.SubmittedAt,
+                CompletionTime = submission.CompletionTime,
+                TotalScore = exam.TotalScore,
+                Score = submission.Score,
+                CorrectCount = submission.Answers.Count(a => a.IsCorrect),
+                QuestionCount = exam.ExamQuestions.Count,
+                Answers = submission.Answers.Select(a => new QuestionAnswerDto
+                {
+                    QuestionId = a.QuestionId,
+                    Answer = a.Answer,
+                    IsCorrect = a.IsCorrect,
+                    Score = a.Score
+                }).ToList()
+            };
+            statistics.StudentResults.Add(studentResult);
+        }
 
         return statistics;
     }
@@ -539,6 +565,89 @@ public class ExamService : IExamService
         }
 
         return results;
+    }
+
+    /// <summary>
+    /// 更新试卷信息
+    /// </summary>
+    /// <param name="dto">包含更新信息的试卷数据传输对象</param>
+    /// <returns>如果更新成功则返回 true，否则返回 false</returns>
+    public async Task<bool> UpdateExamAsync(ExamDto dto)
+    {
+        // 查找现有的试卷实体
+        var existingExam = await _db.Exams
+            .Include(e => e.ExamQuestions) // 包含关联的题目，以便后续可能需要更新
+            .FirstOrDefaultAsync(e => e.Id == dto.Id);
+
+        if (existingExam == null)
+        {
+            // 如果找不到试卷，返回 false
+            // 或者可以考虑抛出异常，让控制器返回 404
+            return false;
+        }
+
+        // 更新试卷的基本属性
+        existingExam.Title = dto.Title;
+        existingExam.Description = dto.Description;
+        existingExam.Deadline = dto.Deadline;
+        existingExam.Status = dto.Status;
+
+        // 更新试卷题目 (这里假设 DTO 中的题目列表是完整的)
+        // 1. 删除不再包含在 DTO 中的现有题目关联
+        var questionIdsInDto = dto.Questions.Select(q => q.QuestionId).ToList();
+        var questionsToRemove = existingExam.ExamQuestions.Where(eq => !questionIdsInDto.Contains(eq.QuestionId)).ToList();
+        if (questionsToRemove.Any())
+        {
+            _db.ExamQuestions.RemoveRange(questionsToRemove);
+        }
+
+        // 2. 更新或添加 DTO 中的题目关联
+        foreach (var questionDto in dto.Questions)
+        {
+            var existingExamQuestion = existingExam.ExamQuestions.FirstOrDefault(eq => eq.QuestionId == questionDto.QuestionId);
+            if (existingExamQuestion != null)
+            {
+                // 更新现有题目
+                existingExamQuestion.Order = questionDto.Order;
+                existingExamQuestion.Score = questionDto.Score;
+            }
+            else
+            {
+                // 添加新题目
+                var newExamQuestion = new ExamQuestion
+                {
+                    ExamId = existingExam.Id,
+                    QuestionId = questionDto.QuestionId,
+                    Order = questionDto.Order,
+                    Score = questionDto.Score
+                };
+                _db.ExamQuestions.Add(newExamQuestion);
+            }
+        }
+        
+        // 重新计算总分
+        existingExam.TotalScore = dto.Questions.Sum(q => q.Score);
+
+        // 标记实体为已修改 (如果使用 EF Core 默认跟踪，这步可能不是必需的，但显式标记更清晰)
+        _db.Entry(existingExam).State = EntityState.Modified;
+
+        try
+        {
+            // 保存更改
+            await _db.SaveChangesAsync();
+            return true; // 更新成功
+        }
+        catch (DbUpdateConcurrencyException)
+        {            
+            // 处理并发冲突，例如重新加载数据或通知用户
+            // 暂时返回 false
+            return false;
+        }
+        catch (Exception)
+        {            
+            // 处理其他可能的数据库错误
+            return false;
+        }
     }
 
     /// <summary>

@@ -181,6 +181,25 @@ const submitExam = async () => {
       type: 'warning'
     })
 
+    // 检查是否有空答案，提醒用户
+    const unansweredCount = currentExam.value.questions.filter(
+      q => !answers[q.questionId]
+    ).length;
+    
+    if (unansweredCount > 0) {
+      const confirm = await ElMessageBox.confirm(
+        `您有 ${unansweredCount} 道题目尚未作答，确定要提交吗？`, 
+        '未完成答题', 
+        {
+          confirmButtonText: '仍然提交',
+          cancelButtonText: '继续作答',
+          type: 'warning'
+        }
+      ).catch(() => false);
+      
+      if (!confirm) return;
+    }
+
     const answerList = Object.entries(answers).map(([questionId, answer]) => ({
       questionId: parseInt(questionId),
       answer: answer || ''
@@ -188,23 +207,63 @@ const submitExam = async () => {
 
     const completionTime = Math.ceil(timeSpent.value / 60) // 转换为分钟
 
-    const response = await examService.submitExam(currentExam.value.id, {
-      answers: answerList,
-      completionTime
-    })
-
-    stopTimer()
-    examResult.value = response.data
-    showResult.value = true
-
-    ElMessage.success('试卷提交成功')
+    // 显示加载中
+    const loading = ElMessage({
+      message: '正在提交试卷，请稍候...',
+      type: 'info',
+      duration: 0
+    });
+      
+    try {
+      const response = await examService.submitExam(currentExam.value.id, {
+        answers: answerList,
+        completionTime
+      });
+      
+      // 关闭加载提示
+      loading.close();
+      
+      stopTimer();
+      
+      // 处理响应数据
+      if (response && response.data) {
+        examResult.value = response.data;
+      } else if (typeof response === 'object') {
+        examResult.value = response as any;
+      } else {
+        throw new Error('服务器返回的数据格式不正确');
+      }
+      
+      showResult.value = true;
+      ElMessage.success('试卷提交成功');
+    } catch (submitError: any) {
+      // 关闭加载提示
+      loading.close();
+      
+      console.error('提交试卷失败:', submitError);
+      
+      // 显示详细错误信息
+      ElMessageBox.alert(
+        `提交失败: ${submitError.message || '未知错误'}
+        
+        如果问题持续存在，请尝试:
+        1. 检查网络连接
+        2. 确认服务器是否正常运行
+        3. 联系管理员处理
+        `, 
+        '提交错误', 
+        {
+          type: 'error',
+          confirmButtonText: '知道了'
+        }
+      );
+    }
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('提交试卷失败:', error)
-      ElMessage.error('提交试卷失败')
+      console.error('提交试卷操作取消:', error);
     }
   }
-}
+};
 
 // 获取选项标签
 const getOptionLabel = (index: number): string => {
@@ -333,7 +392,7 @@ const getAnswerResult = (questionId: number) => {
               <el-radio
                 v-for="(option, optIndex) in JSON.parse(question.question.optionsJson || '[]')"
                 :key="optIndex"
-                :label="getOptionLabel(optIndex)"
+                :value="getOptionLabel(optIndex)"
               >
                 {{ getOptionLabel(optIndex) }}. {{ option }}
               </el-radio>
@@ -343,8 +402,8 @@ const getAnswerResult = (questionId: number) => {
           <!-- 判断题 -->
           <div v-else-if="question.question.type === QuestionType.Judge" class="question-options">
             <el-radio-group v-model="answers[question.questionId]">
-              <el-radio label="T">正确</el-radio>
-              <el-radio label="F">错误</el-radio>
+              <el-radio :value="'T'">正确</el-radio>
+              <el-radio :value="'F'">错误</el-radio>
             </el-radio-group>
           </div>
 

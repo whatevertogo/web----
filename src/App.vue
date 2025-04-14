@@ -17,12 +17,6 @@ const updateActiveIndex = (path: string) => {
     case '/practice':
       activeIndex.value = 'practice'
       break
-    case '/exam-taking':
-      activeIndex.value = 'exam-taking'
-      break
-    case '/exam-manage':
-      activeIndex.value = 'exam-manage'
-      break
     case '/input':
       activeIndex.value = '1'
       break
@@ -53,12 +47,6 @@ const handleSelect = (key: string) => {
   switch (key) {
     case 'practice':
       router.push('/practice')
-      break
-    case 'exam-taking':
-      router.push('/exam-taking')
-      break
-    case 'exam-manage':
-      router.push('/exam-manage')
       break
     case '1':
       router.push('/input')
@@ -121,10 +109,6 @@ if (instance) {
               <el-icon><Reading /></el-icon>
               <span>试题练习</span>
             </el-menu-item>
-            <el-menu-item index="exam-taking">
-              <el-icon><Document /></el-icon>
-              <span>我的试卷</span>
-            </el-menu-item>
             <template v-if="userStore.isAdmin()">
               <el-menu-item index="1">
                 <el-icon><Edit /></el-icon>
@@ -137,10 +121,6 @@ if (instance) {
               <el-menu-item index="3">
                 <el-icon><Download /></el-icon>
                 <span>导出试题</span>
-              </el-menu-item>
-              <el-menu-item index="exam-manage">
-                <el-icon><Files /></el-icon>
-                <span>试卷管理</span>
               </el-menu-item>
               <el-menu-item index="student-register">
                 <el-icon><UserFilled /></el-icon>

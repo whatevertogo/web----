@@ -72,6 +72,14 @@ export const useUserStore = () => {
       }
 
       saveUserInfo(userInfo.value);
+
+      // 根据用户角色决定跳转目标
+      if (role === 'admin') {
+        router.push('/input'); // 管理员跳转到题目录入页面
+      } else {
+        router.push('/practice'); // 学生跳转到练习页面
+      }
+      
       return true;
     } catch (error) {
       console.error('登录失败:', error);
@@ -104,8 +112,8 @@ export const useUserStore = () => {
   }
 
   const isLoggedIn = () => {
-    // 使用 JWT 令牌检查是否已登录
-    return authService.isLoggedIn() && userInfo.value.role !== 'user';
+    // 检查是否存在有效的 JWT 令牌
+    return authService.isLoggedIn();
   }
 
   const updateUserInfo = (info: Partial<UserInfo>) => {

@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using QuestionBankApi.LoginSystemApi.Data;
 using QuestionBankApi.LoginSystemApi.Helpers;
 using QuestionBankApi.LoginSystemApi.Models;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace QuestionBankApi.LoginSystemApi.Services;
 
@@ -87,26 +89,11 @@ public class AuthService : IAuthService
     /// </summary>
     /// <param name="password">原始密码</param>
     /// <returns>哈希后的密码</returns>
-    private static string HashPassword(string password)
+    private string HashPassword(string password)
     {
-        // 在实际应用中，应该使用 BCrypt.Net-Next 包
-        // 这里使用简单的 SHA256 哈希作为示例
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        var bytes = System.Text.Encoding.UTF8.GetBytes(password);
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(password);
         var hash = sha256.ComputeHash(bytes);
         return Convert.ToBase64String(hash);
-    }
-
-    /// <summary>
-    /// 密码验证方法
-    /// </summary>
-    /// <param name="password">原始密码</param>
-    /// <param name="hash">哈希后的密码</param>
-    /// <returns>是否验证通过</returns>
-    private static bool VerifyPassword(string password, string hash)
-    {
-        // 使用相同的算法计算密码哈希并比较
-        var newHash = HashPassword(password);
-        return newHash == hash;
     }
 }

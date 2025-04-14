@@ -262,4 +262,52 @@ public class ExamsController : ControllerBase
             return StatusCode(500, new { success = false, message = "获取成绩失败", error = ex.Message });
         }
     }
+
+    /// <summary>
+    /// 更新试卷信息（仅管理员）
+    /// </summary>
+    /// <param name="id">试卷ID</param>
+    /// <param name="dto">更新的试卷数据</param>
+    /// <returns>操作结果</returns>
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)] // 成功且无内容返回
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> UpdateExam(int id, [FromBody] ExamDto dto)
+    {
+        if (id != dto.Id)
+        {
+            return BadRequest(new { success = false, message = "请求路径中的ID与请求体中的ID不匹配" });
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(new { success = false, message = "请求数据无效", errors = ModelState });
+        }
+
+        try
+        {
+            var exam = await _examService.GetExamByIdAsync(id);
+            if (exam == null)
+            {
+                return NotFound(new { success = false, message = $"未找到ID为{id}的试卷" });
+            }
+
+            var success = await _examService.UpdateExamAsync(dto);
+            if (!success)
+            {
+                 // 这里可以添加更具体的错误信息，如果服务层能提供的话
+                return StatusCode(500, new { success = false, message = "更新试卷时发生未知错误" });
+            }
+
+            return NoContent(); // 成功更新，返回 204 No Content
+        }
+        catch (Exception ex)
+        {
+            // 考虑添加更具体的异常处理，例如处理并发冲突
+            return StatusCode(500, new { success = false, message = "更新试卷失败", error = ex.Message });
+        }
+    }
 }

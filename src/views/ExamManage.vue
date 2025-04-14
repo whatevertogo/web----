@@ -60,6 +60,45 @@ const statisticsDialogVisible = ref(false)
 // 当前查看的试卷统计信息
 const currentExamStatistics = ref(null)
 
+// 定义响应类型接口
+interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  error?: string;
+  data?: T;
+}
+
+// 定义试卷统计数据类型
+interface ExamStatistics {
+  examId: number;
+  examTitle: string;
+  studentCount: number;
+  submittedCount: number;
+  averageScore: number;
+  highestScore: number;
+  lowestScore: number;
+  passRate: number;
+  scoreDistribution: Record<string, number>;
+  questionStatistics: Array<{
+    order: number;
+    type: QuestionType;
+    content: string;
+    correctRate: number;
+    correctCount: number;
+    incorrectCount: number;
+  }>;
+  studentResults: Array<{
+    studentId: number;
+    studentName: string;
+    score: number;
+    totalScore: number;
+    correctCount: number;
+    questionCount: number;
+    completionTime: number;
+    submittedAt: string;
+  }>;
+}
+
 // 加载试卷列表
 const loadExams = async () => {
   loading.value = true
@@ -150,28 +189,24 @@ const editExam = async (exam) => {
   examForm.deadline = exam.deadline
   examForm.questions = [...(Array.isArray(exam.questions) ? exam.questions : [])]
 
-  // 如果题目数据不完整，需要从后端获取完整的题目数据
   try {
-    // 先将现有的题目数据保存下来
     const questionIds = exam.questions.map(q => q.questionId)
     console.log('需要获取的题目 ID:', questionIds)
 
-    // 获取所有题目
     const allQuestions = await questionService.getQuestions()
     console.log('获取到的所有题目:', allQuestions)
 
-    // 筛选出试卷中的题目
     const examQuestions = allQuestions.filter(q => questionIds.includes(q.id))
     console.log('试卷中的题目:', examQuestions)
 
-    // 更新选中的题目
     selectedQuestions.value = examQuestions.map(q => ({
       id: q.id,
       type: q.type,
-      question: q.question || q.content,
+      question: q.question,
       options: q.options || [],
       answers: q.answers || [],
-      analysis: q.analysis || ''
+      analysis: q.analysis || '',
+      createTime: q.createTime || new Date().toISOString()
     }))
   } catch (error) {
     console.error('获取题目数据失败:', error)
@@ -332,29 +367,20 @@ const assignExamToStudents = async () => {
       studentIds: selectedStudents.value
     })
 
-    const response = await examService.assignExam(examForm.id, selectedStudents.value)
+    const response = await examService.assignExam(examForm.id, selectedStudents.value) as ApiResponse<boolean>
     console.log('分配试卷响应:', response)
 
-    // 修改这里的判断逻辑
-    // 如果响应直接是 true，或者响应对象包含 success: true，都视为成功
-    if (response === true || (response && response.success)) {
-      // 尝试从响应对象获取消息，否则使用默认成功消息
-      const successMessage = (response && typeof response === 'object' && response.message)
-        ? response.message
-        : '发布试卷成功';
+    if (response.success) {
+      const successMessage = response.message || '发布试卷成功'
       ElMessage.success(successMessage)
       studentDialogVisible.value = false
 
-      // 添加延时，确保后端处理完成
       setTimeout(() => {
         loadExams()
       }, 1000)
     } else {
-      // 如果响应是对象但 success 为 false，尝试获取错误消息
-      const errorMessage = (response && typeof response === 'object' && (response.message || response.error))
-        ? (response.message || response.error)
-        : '未知错误';
-      ElMessage.error(`发布试卷失败: ${errorMessage}，请重试`) // 显示更具体的错误或默认消息
+      const errorMessage = response.error || '未知错误'
+      ElMessage.error(`发布试卷失败: ${errorMessage}，请重试`)
     }
   } catch (error: any) {
     console.error('分配试卷时发生错误:', error)
@@ -382,15 +408,19 @@ const viewStatistics = async (exam) => {
     const response = await examService.getExamStatistics(exam.id)
     console.log('获取的统计信息:', response)
 
-    if (response && response.data) {
-      currentExamStatistics.value = response.data
+    // 将响应转换为 ApiResponse 类型
+    const apiResponse: ApiResponse<ExamStatistics> = {
+      success: true,
+      data: response as unknown as ExamStatistics
+    }
 
-      // 如果没有试卷标题，使用当前试卷的标题
+    if (apiResponse.success && apiResponse.data) {
+      currentExamStatistics.value = apiResponse.data
+
       if (!currentExamStatistics.value.examTitle) {
         currentExamStatistics.value.examTitle = exam.title
       }
 
-      // 确保分数分布数据存在
       if (!currentExamStatistics.value.scoreDistribution) {
         currentExamStatistics.value.scoreDistribution = {}
         console.warn('缺少分数分布数据')
@@ -919,11 +949,24 @@ onMounted(() => {
 
 <script lang="ts">
 // 获取分数区间的颜色
-function getScoreColor(range: string): string {
-  if (range === '90-100') return '#67C23A'
-  if (range === '80-89') return '#85CE61'
-  if (range === '70-79') return '#E6A23C'
-  if (range === '60-69') return '#F56C6C'
-  return '#909399'
+function getScoreColor(range: string | number): string {
+  const scoreRanges: Record<string, string> = {
+    '90-100': '#67C23A',
+    '80-89': '#85CE61',
+    '70-79': '#E6A23C',
+    '60-69': '#F56C6C',
+    '0-59': '#909399'
+  }
+  
+  // 如果 range 是数字，转换为对应的区间字符串
+  if (typeof range === 'number') {
+    if (range >= 90) return scoreRanges['90-100']
+    if (range >= 80) return scoreRanges['80-89']
+    if (range >= 70) return scoreRanges['70-79']
+    if (range >= 60) return scoreRanges['60-69']
+    return scoreRanges['0-59']
+  }
+  
+  return scoreRanges[range] || '#909399'
 }
 </script>

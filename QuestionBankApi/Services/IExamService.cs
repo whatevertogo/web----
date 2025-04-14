@@ -73,4 +73,11 @@ public interface IExamService
     /// <param name="studentId">学生ID（可选）</param>
     /// <returns>成绩信息</returns>
     Task<IEnumerable<ExamResultDto>> GetExamResultsAsync(int examId, int? studentId = null);
+    
+    /// <summary>
+    /// 更新试卷信息
+    /// </summary>
+    /// <param name="dto">包含更新信息的试卷数据传输对象</param>
+    /// <returns>如果更新成功则返回 true，否则返回 false</returns>
+    Task<bool> UpdateExamAsync(ExamDto dto);
 }

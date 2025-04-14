@@ -1,4 +1,6 @@
 import { api } from './api';
+// 指向新的 exam 类型文件
+import type { ExamStatisticsDto, ExamResultDto } from '../types/exam';
 
 // 响应接口定义
 interface ApiResponse<T> {
@@ -167,23 +169,59 @@ export const examService = {
   // 提交试卷
   async submitExam(examId: number, submission: any): Promise<ExamSubmissionResponse> {
     try {
-      return await api.post<ExamSubmissionResponse>(`/exams/${examId}/submit`, submission);
-    } catch (error) {
+      console.log(`正在提交试卷 ${examId}，数据:`, JSON.stringify(submission).substring(0, 200) + '...');
+      
+      // 添加超时处理
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('提交请求超时，请重试')), 20000); // 延长到20秒
+      });
+
+      // 实际请求
+      const fetchPromise = api.post<ExamSubmissionResponse>(`/exams/${examId}/submit`, submission);
+
+      // 使用Promise.race竞争，哪个先完成就返回哪个
+      try {
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        console.log(`试卷 ${examId} 提交成功，响应:`, response);
+        return response;
+      } catch (raceError: any) {
+        console.error(`提交试卷 Promise.race 出错:`, raceError);
+        throw raceError;
+      }
+    } catch (error: any) {
       console.error(`提交试卷 ${examId} 失败:`, error);
+      
+      // 针对特定错误提供更友好的消息
+      if (error.message && error.message.includes('无法连接到服务器')) {
+        throw new Error(`服务器连接失败，请确认后端服务已启动并且API地址正确 (${error.message})`);
+      }
+      
       throw error;
     }
   },
 
-  // 获取试卷统计信息
-  async getExamStatistics(examId: number) {
+  /**
+   * 获取试卷统计信息 (管理员)
+   * @param examId 试卷ID
+   * @returns 试卷统计数据
+   */
+  async getExamStatistics(examId: number): Promise<ExamStatisticsDto> {
     try {
       console.log(`准备获取试卷 ${examId} 的统计信息`);
-      const response = await api.get(`/exams/${examId}/statistics`);
-      console.log(`获取试卷 ${examId} 统计信息响应:`, response);
-      return response;
+      // 后端返回的数据结构是 { success: true, data: statistics }
+      const response = await api.get<{ success: boolean; data: ExamStatisticsDto; message?: string }>(`/exams/${examId}/statistics`);
+      
+      if (response && response.success && response.data) {
+         console.log(`获取试卷 ${examId} 统计信息响应:`, response.data);
+         return response.data; // 直接返回 data 部分
+      } else {
+        // 如果 success 为 false 或 data 不存在，则抛出错误
+        throw new Error(response?.message || `获取统计数据失败 (${examId})`);
+      }
     } catch (error) {
       console.error(`获取试卷 ${examId} 统计信息失败:`, error);
-      throw error; // 抛出错误，让调用者处理
+      // 可以考虑向上层抛出更具体的错误，或者保留原始错误
+      throw error; 
     }
   },
 

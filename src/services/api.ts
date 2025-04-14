@@ -95,57 +95,44 @@ export const api = {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(config.apiBaseUrl + endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(data)
-      })
-
-      // 204 No Content
-      if (response.status === 204) {
-        return {} as T
+      let response;
+      try {
+        response = await fetch(config.apiBaseUrl + endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(data),
+          credentials: 'include'
+        });
+      } catch (fetchError: any) {
+        console.error('网络请求错误:', fetchError);
+        throw new Error(`无法连接到服务器(${config.apiBaseUrl})，请检查网络连接或服务器状态`);
       }
 
-      // 检查响应是否为空
+      // 检查HTTP状态
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('服务器响应错误:', response.status, errorText);
+        throw new Error(`请求失败(${response.status}): ${errorText}`);
+      }
+
+      // 尝试解析响应
       const text = await response.text();
+      console.log('原始响应文本:', text);
+
       if (!text || text.trim() === '') {
-        console.warn('API返回空响应:', endpoint);
         return {} as T;
       }
 
-      // 尝试解析JSON
-      let result: any;
       try {
-        result = JSON.parse(text);
+        const result = JSON.parse(text);
+        return result as T;
       } catch (parseError) {
         console.error('JSON解析失败:', text, parseError);
         throw new Error('服务器返回的数据格式无效');
       }
-
-      // 处理不同的响应格式
-      if (Array.isArray(result)) {
-        // 如果直接返回数组，直接使用
-        return result as T;
-      } else if (result && typeof result === 'object') {
-        // 如果是标准的API响应格式
-        if ('success' in result) {
-          if (!result.success) {
-            throw new Error(result.message || result.error || '操作失败');
-          }
-          return result.data as T;
-        }
-        // 如果是其他对象格式，直接返回
-        return result as T;
-      }
-
-      if (!response.ok) {
-        throw new Error(`请求失败(${response.status})`);
-      }
-
-      throw new Error('无法识别的响应格式');
     } catch (error: any) {
-      console.error('POST请求失败:', error)
-      throw new Error(error.message || '网络请求失败')
+      console.error('POST请求失败:', error);
+      throw error;
     }
   },
   async put<T>(endpoint: string, data: any): Promise<T> {

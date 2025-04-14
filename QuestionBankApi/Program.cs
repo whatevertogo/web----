@@ -20,6 +20,7 @@ using QuestionBankApi.Services;
 using QuestionBankApi.LoginSystemApi.Services;
 using QuestionBankApi.LoginSystemApi.Helpers;
 using QuestionBankApi;
+using QuestionBankApi.LoginSystemApi.Middleware;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,11 +28,10 @@ var builder = WebApplication.CreateBuilder(args);
 // 添加 CORS 服务，允许前端跨域请求
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowVueApp", builder =>
+    options.AddPolicy("AllowVueApp", policyBuilder =>
     {
-        builder
-            // 开发环境下允许任何来源
-            .AllowAnyOrigin()
+        policyBuilder
+            .WithOrigins("http://localhost:5173") // 明确指定允许的前端开发服务器源
             .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 明确指定允许的HTTP方法
             .WithHeaders(              // 明确指定允许的请求头
                 "Content-Type",
@@ -41,8 +41,7 @@ builder.Services.AddCors(options =>
             .WithExposedHeaders(       // 允许前端访问的响应头
                 "Content-Disposition"
             )
-            // 注意: 当使用 AllowAnyOrigin 时不能使用 AllowCredentials
-            // .AllowCredentials()        // 允许发送认证信息（cookies等）
+            .AllowCredentials()        // 允许发送认证信息（cookies等）
             .SetPreflightMaxAge(TimeSpan.FromMinutes(10)); // 预检请求缓存时间
     });
 });
@@ -109,22 +108,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseExceptionHandler(builder =>
-{
-    builder.Run(async context =>
-    {
-        var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
-        var response = new
-        {
-            success = false,
-            message = exception?.Message ?? "An error occurred"
-        };
-
-        context.Response.StatusCode = 500;
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(response);
-    });
-});
+// 使用全局异常处理中间件
+app.UseMiddleware<ExceptionMiddleware>();
 
 // 启用CORS策略
 app.UseCors("AllowVueApp");
