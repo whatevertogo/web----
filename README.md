@@ -9,9 +9,9 @@
 - 支持单选题、判断题、填空题、编程题、简答题等多种题型
 - 题目导入导出（支持 Word 文档格式）
 - 题目分类管理和搜索
-- AI 辅助（基于 DeepSeek API）
+- AI 辅助出题（基于 DeepSeek API）
 
-### 考试系统(未完成)
+### 考试系统（未完成）
 
 - 在线组卷和发布考试
 - 学生在线答题
@@ -61,39 +61,36 @@
 ### 安装步骤
 
 1. 克隆项目
-\`\`\`bash
-git clone [项目地址]
+
+```bash
+git clone https://github.com/用户名/2306053105.git
 cd 2306053105
-\`\`\`
+```
 
 2. 前端设置
-\`\`\`bash
 
+```bash
 # 安装依赖
-
 npm install
 
 # 启动开发服务器
-
 npm run dev
-\`\`\`
+```
 
 3. 后端设置
-\`\`\`bash
+
+```bash
 cd QuestionBankApi
 
 # 还原 NuGet 包
-
 dotnet restore
 
 # 更新数据库
-
 dotnet ef database update
 
 # 运行项目
-
 dotnet run
-\`\`\`
+```
 
 4. 配置 DeepSeek API（可选）
 
@@ -122,18 +119,19 @@ dotnet run
 ### 前端部署
 
 1. 构建生产版本
-\`\`\`bash
-npm run build
-\`\`\`
-2. 将 \`dist\` 目录部署到 Web 服务器
+
+    ```bash
+    npm run build
+    ```
+
+2. 将 `dist` 目录部署到 Web 服务器
 
 ### 后端部署
 
-\`\`\`bash
+```bash
 cd QuestionBankApi
 dotnet publish -c Release
-\`\`\`
-
+```
 
 ## 许可证
 
@@ -143,5 +141,13 @@ dotnet publish -c Release
 
 如有问题或建议，请通过以下方式联系：
 
-- Email: [1879483647@qq.com]
-- GitHub Issues: [项目 Issues 链接]
+- Email: <1879483647@qq.com>
+- GitHub: [https://github.com/用户名/2306053105/issues](https://github.com/用户名/2306053105/issues)
+
+## 更新日志
+
+### 2025-04-18
+
+- 完成题库管理基本功能
+- 集成 DeepSeek API
+- 实现用户认证和权限控制
