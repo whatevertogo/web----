@@ -8,14 +8,20 @@
     "build": "vite build",
     "preview": "vite preview"
   },
-  "dependencies": {  
+  "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
+    "@types/dompurify": "^3.0.5",
+    "@types/highlight.js": "^9.12.4",
+    "@types/marked": "^5.0.2",
     "@types/pizzip": "^3.0.5",
     "axios": "^1.8.4",
     "docxtemplater": "^3.60.2",
+    "dompurify": "^3.2.5",
     "element-plus": "^2.9.7",
     "file-saver": "^2.0.5",
+    "highlight.js": "^11.11.1",
     "jwt-decode": "^4.0.0",
+    "marked": "^15.0.8",
     "pinia": "^2.1.7",
     "pizzip": "^3.1.8",
     "tsc": "^2.0.4",

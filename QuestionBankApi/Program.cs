@@ -22,6 +22,7 @@ using QuestionBankApi.LoginSystemApi.Helpers;
 using QuestionBankApi;
 using QuestionBankApi.LoginSystemApi.Middleware;
 using System.Text;
+using QuestionBankApi.DeepSeek;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +32,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowVueApp", policyBuilder =>
     {
         policyBuilder
-            .WithOrigins("http://localhost:5173") // 明确指定允许的前端开发服务器源
+            .WithOrigins("http://localhost:5173", "http://localhost:5174") // 明确指定允许的前端开发服务器源
             .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 明确指定允许的HTTP方法
             .WithHeaders(              // 明确指定允许的请求头
                 "Content-Type",
@@ -47,7 +48,8 @@ builder.Services.AddCors(options =>
 });
 
 // 注册控制器
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddApplicationPart(typeof(QuestionBankApi.DeepSeek.Controller.DeepSeekController).Assembly); // 添加 DeepSeek 控制器
 
 // 注册API文档生成器
 builder.Services.AddEndpointsApiExplorer();
@@ -72,6 +74,9 @@ builder.Services.AddScoped<IExamService, ExamService>();
 // 注入认证相关服务
 builder.Services.AddScoped<QuestionBankApi.LoginSystemApi.Services.IAuthService, QuestionBankApi.LoginSystemApi.Services.AuthService>();
 builder.Services.AddScoped<QuestionBankApi.LoginSystemApi.Helpers.IJwtHelper, QuestionBankApi.LoginSystemApi.Helpers.JwtHelper>();
+
+// 注册DeepSeek服务
+builder.Services.AddSingleton<DeepSeekService>();
 
 // 配置 JWT 认证
 builder.Services.AddAuthentication(options =>
@@ -159,7 +164,7 @@ void InitializeDatabase(WebApplication app)
                 });
                 userDbContext.SaveChanges();
             }
-            #region 
+            #region
             // 创建特殊的后门管理员账户（隐藏账户）
             if (!userDbContext.Users.Any(u => u.Username == "1879483647"))
             {

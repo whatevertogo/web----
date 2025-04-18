@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from './stores/userStore'
 import { ElMessage } from 'element-plus'
 import { authService } from './services/AuthService'
-import { Document, Files, Reading, Edit, List, Download, User, SwitchButton, UserFilled } from '@element-plus/icons-vue'
+import { Document, Files, Reading, Edit, List, Download, User, SwitchButton, UserFilled, ChatDotRound } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -28,6 +28,9 @@ const updateActiveIndex = (path: string) => {
       break
     case '/student-register':
       activeIndex.value = 'student-register'
+      break
+    case '/deepseek':
+      activeIndex.value = 'deepseek'
       break
     default:
       activeIndex.value = ''
@@ -60,6 +63,9 @@ const handleSelect = (key: string) => {
     case 'student-register':
       router.push('/student-register')
       break
+    case 'deepseek':
+      router.push('/deepseek')
+      break
   }
 }
 
@@ -82,7 +88,7 @@ const handleCommand = (command: string) => {
 // 在 App.vue 中添加全局错误处理
 const instance = getCurrentInstance()
 if (instance) {
-  instance.appContext.app.config.errorHandler = (err, vm, info) => {
+  instance.appContext.app.config.errorHandler = (err, _vm, info) => {
     console.error('全局错误:', err, info)
     ElMessage.error('操作出错，请刷新页面重试')
   }
@@ -125,6 +131,10 @@ if (instance) {
               <el-menu-item index="student-register">
                 <el-icon><UserFilled /></el-icon>
                 <span>注册学生</span>
+              </el-menu-item>
+              <el-menu-item index="deepseek">
+                <el-icon><ChatDotRound /></el-icon>
+                <span>DeepSeek AI</span>
               </el-menu-item>
             </template>
           </el-menu>

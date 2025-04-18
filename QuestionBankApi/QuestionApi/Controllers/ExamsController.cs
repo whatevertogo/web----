@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuestionBankApi.DTOs;
 using QuestionBankApi.Services;
-using QuestionBankApi.LoginSystemApi.Models;
 
 namespace QuestionBankApi.Controllers;
 

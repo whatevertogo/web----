@@ -72,6 +72,12 @@ const router = createRouter({
       name: 'NotFound',
       component: () => import('../views/NotFound.vue'),
       meta: { allowAnonymous: true }
+    },
+    {
+      path: '/deepseek',
+      name: 'DeepSeek',
+      component: () => import('../views/DeepSeek.vue'),
+      meta: { requiresAdmin: true }
     }
   ]
 })
