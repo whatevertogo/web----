@@ -77,7 +77,7 @@ const router = createRouter({
       path: '/deepseek',
       name: 'DeepSeek',
       component: () => import('../views/DeepSeek.vue'),
-      meta: { requiresAdmin: true }
+      meta: { requiresAuth: true } // 允许所有已登录用户访问，包括学生
     }
   ]
 })

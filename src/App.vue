@@ -132,11 +132,13 @@ if (instance) {
                 <el-icon><UserFilled /></el-icon>
                 <span>注册学生</span>
               </el-menu-item>
-              <el-menu-item index="deepseek">
-                <el-icon><ChatDotRound /></el-icon>
-                <span>DeepSeek AI</span>
-              </el-menu-item>
             </template>
+            <!-- DeepSeek AI 菜单项对所有已登录用户可见 -->
+            <el-menu-item v-if="userStore.isLoggedIn()" index="deepseek">
+              <el-icon><ChatDotRound /></el-icon>
+              <span>DeepSeek AI</span>
+            </el-menu-item>
+
           </el-menu>
           <div class="user-info">
             <!-- 已登录状态 -->
