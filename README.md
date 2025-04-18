@@ -4,7 +4,7 @@ This template should help get you started developing with Vue 3 in Vite. The tem
 
 Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
 
-#这是一个基于 Vue 3 和 Vite 的 Web 应用程序项目。该项目提供了一个基础的开发环境,包括 Vue 3 的 <script setup> 单文件组件、IDE 支持等。
+# 这是一个基于 Vue 3 和 Vite 的 Web 应用程序项目。该项目提供了一个基础的开发环境,包括 Vue 3 的 <script setup> 单文件组件、IDE 支持等。
 
 主要功能点
 实现了问题管理和练习功能
