@@ -98,21 +98,22 @@ dotnet run
 
 ## 项目结构
 
-\`\`\`
-├── src/                   # 前端源码
-│   ├── assets/           # 静态资源
-│   ├── components/       # 组件
-│   ├── services/         # API 服务
-│   ├── stores/          # Pinia 状态管理
-│   ├── views/           # 页面组件
-│   └── ...
-├── QuestionBankApi/      # 后端源码
-│   ├── Controllers/     # API 控制器
-│   ├── Models/         # 数据模型
-│   ├── Services/       # 业务服务
-│   ├── DeepSeek/       # AI 集成服务
-│   └── ...
-\`\`\`
+```plaintext
+2306053105/
+├─src/                    # 前端源码
+│  ├─assets/             # 静态资源
+│  ├─components/         # 组件
+│  ├─services/           # API 服务
+│  ├─stores/             # Pinia 状态管理
+│  ├─views/              # 页面组件
+│  └─...
+└─QuestionBankApi/       # 后端源码
+   ├─Controllers/        # API 控制器
+   ├─Models/             # 数据模型
+   ├─Services/           # 业务服务
+   ├─DeepSeek/          # AI 集成服务
+   └─...
+```
 
 ## 部署
 
