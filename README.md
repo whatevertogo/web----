@@ -138,13 +138,6 @@ dotnet publish -c Release
 
 该项目使用 MIT 许可证。
 
-## 联系方式
-
-如有问题或建议，请通过以下方式联系：
-
-- Email: <1879483647@qq.com>
-- GitHub: [https://github.com/用户名/2306053105/issues](https://github.com/用户名/2306053105/issues)
-
 ## 更新日志
 
 ### 2025-04-18
