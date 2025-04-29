@@ -17,10 +17,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using QuestionBankApi.Data;
 using QuestionBankApi.Services;
-using QuestionBankApi.LoginSystemApi.Services;
-using QuestionBankApi.LoginSystemApi.Helpers;
 using QuestionBankApi;
-using QuestionBankApi.LoginSystemApi.Middleware;
+using QuestionBankApi.LoginSystemApi.Middleware; 
 using System.Text;
 using QuestionBankApi.DeepSeek;
 
