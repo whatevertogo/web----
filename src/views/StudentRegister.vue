@@ -292,8 +292,6 @@ const handleBatchRegister = async () => {
 
     try {
       const { prefix, startIndex, count, password } = batchForm
-      const successCount = 0
-      const failedCount = 0
       const newStudents = []
 
       // 创建进度提示
@@ -302,7 +300,6 @@ const handleBatchRegister = async () => {
         message: `正在批量注册学生账号 (0/${count})...`,
         duration: 0
       })
-
       // 批量注册
       for (let i = 0; i < count; i++) {
         const index = startIndex + i
@@ -326,7 +323,7 @@ const handleBatchRegister = async () => {
           }
 
           // 添加小延迟，避免请求过快
-          await new Promise(resolve => setTimeout(resolve, 300))
+          await new Promise(resolve => setTimeout(resolve, 200))
         } catch (error) {
           console.error(`注册学生 ${username} 失败:`, error)
         }
