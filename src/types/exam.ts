@@ -1,7 +1,3 @@
-// src/types/exam.ts
-
-// 你可能需要从其他类型文件导入相关类型，例如 QuestionDto
-// import type { QuestionDto } from './question';
 
 // --- 从后端 ExamResultDto.cs 对应 ---
 export interface ExamResultDto {

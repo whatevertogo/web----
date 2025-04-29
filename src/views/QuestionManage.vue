@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onActivated, watch } from 'vue'
+import { validateForm } from '../utils/questionUtils';
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
@@ -10,6 +11,8 @@ import { Download, Plus, View, Delete, Search, Refresh } from '@element-plus/ico
 
 // 获取路由器实例
 const router = useRouter()
+
+
 
 // 题型映射
 const typeMap: TypeMap = {
@@ -129,66 +132,13 @@ const isEditing = ref(false)
 const editForm = ref<any>({})
 
 // 监听题型变化，初始化相应字段
+import { initializeQuestionFields } from '../utils/questionUtils';
+
 watch(() => editForm.value.type, (newType: number) => {
-  if (!isEditing.value) return // 只在编辑模式下生效
+  if (!isEditing.value) return; // 只在编辑模式下生效
 
-  // 如果是新创建的题目，添加示例题目内容
-  const isNewQuestion = !editForm.value.id
-
-  // 初始化各题型特有字段
-  if (newType === QuestionType.Single) {
-    // 单选题初始化
-    if (!editForm.value.options || !Array.isArray(editForm.value.options) || editForm.value.options.length < 2) {
-      editForm.value.options = isNewQuestion ?
-        ['选项A', '选项B', '选项C', '选项D'] :
-        ['', '']
-    }
-    if (isNewQuestion) {
-      editForm.value.question = '请输入单选题题目'
-      editForm.value.correctAnswer = 'A'
-      editForm.value.analysis = '请输入解析'
-    } else {
-      editForm.value.correctAnswer = editForm.value.correctAnswer || ''
-    }
-  } else if (newType === QuestionType.Judge) {
-    // 判断题初始化
-    if (isNewQuestion) {
-      editForm.value.question = '请输入判断题题目'
-      editForm.value.analysis = '请输入解析'
-    }
-    editForm.value.correctAnswer = editForm.value.correctAnswer || '正确' // 默认选择“正确”
-  } else if (newType === QuestionType.Fill) {
-    // 填空题初始化
-    if (!editForm.value.answers || !Array.isArray(editForm.value.answers) || editForm.value.answers.length === 0) {
-      editForm.value.answers = isNewQuestion ? ['答案一', '答案二'] : ['']
-    }
-    if (isNewQuestion) {
-      editForm.value.question = '请输入填空题题目，空格用下划线表示，如：Vue的全称是___'
-      editForm.value.analysis = '请输入解析'
-    }
-  } else if (newType === QuestionType.Program) {
-    // 编程题初始化
-    if (isNewQuestion) {
-      editForm.value.question = '请实现一个函数，完成指定功能'
-      editForm.value.sampleInput = 'function add(a, b) {\n  // 请实现该函数\n}'
-      editForm.value.sampleOutput = 'function add(a, b) {\n  return a + b;\n}'
-      editForm.value.referenceAnswer = 'function add(a, b) {\n  return a + b;\n}'
-      editForm.value.analysis = '这是一个简单的加法函数实现'
-    } else {
-      editForm.value.sampleInput = editForm.value.sampleInput || ''
-      editForm.value.sampleOutput = editForm.value.sampleOutput || ''
-      editForm.value.referenceAnswer = editForm.value.referenceAnswer || ''
-    }
-  } else if (newType === QuestionType.ShortAnswer) {
-    // 简答题初始化
-    if (isNewQuestion) {
-      editForm.value.question = '请简要回答以下问题'
-      editForm.value.referenceAnswer = '参考答案内容'
-      editForm.value.analysis = '解析说明'
-    } else {
-      editForm.value.referenceAnswer = editForm.value.referenceAnswer || ''
-    }
-  }
+  const isNewQuestion = !editForm.value.id;
+  initializeQuestionFields(newType, isNewQuestion, editForm.value);
 })
 
 const startEdit = () => {
@@ -274,46 +224,13 @@ const createNewQuestion = () => {
 
 const saveEdit = async () => {
   try {
-    // 验证必填字段
-    if (!editForm.value.question || editForm.value.question.trim() === '') {
-      ElMessage.warning('题目内容不能为空')
-      return
-    }
+    // 验证表单字段
 
-    // 根据题型验证
-    if (editForm.value.type === QuestionType.Single) {
-      if (!editForm.value.options || editForm.value.options.length < 2) {
-        ElMessage.warning('单选题至少需要两个选项')
-        return
-      }
-      if (!editForm.value.correctAnswer) {
-        ElMessage.warning('请选择正确答案')
-        return
-      }
-    } else if (editForm.value.type === QuestionType.Judge) {
-      if (!editForm.value.correctAnswer) {
-        ElMessage.warning('请选择正确答案')
-        return
-      }
-    } else if (editForm.value.type === QuestionType.Fill) {
-      if (!editForm.value.answers || editForm.value.answers.length === 0) {
-        ElMessage.warning('填空题至少需要一个答案')
-        return
-      }
-    } else if (editForm.value.type === QuestionType.Program) {
-      if (!editForm.value.sampleInput || !editForm.value.sampleOutput) {
-        ElMessage.warning('编程题需要提供示例输入和输出')
-        return
-      }
-      if (!editForm.value.referenceAnswer) {
-        ElMessage.warning('编程题需要提供参考答案')
-        return
-      }
-    } else if (editForm.value.type === QuestionType.ShortAnswer) {
-      if (!editForm.value.referenceAnswer) {
-        ElMessage.warning('简答题需要提供参考答案')
-        return
-      }
+    try {
+      validateForm(editForm.value);
+    } catch (error: any) {
+      ElMessage.warning(error.message);
+      return;
     }
 
     // 判断是新建还是更新
@@ -426,38 +343,18 @@ onActivated(() => {
   <div class="question-manage">
     <!-- 搜索区域 -->
     <el-card class="search-card">
-      <el-form
-        ref="searchFormRef"
-        :model="searchForm"
-        inline
-      >
+      <el-form ref="searchFormRef" :model="searchForm" inline>
         <el-form-item label="关键词" prop="keyword">
-          <el-input
-            v-model="searchForm.keyword"
-            placeholder="题目内容"
-            clearable
-            @keyup.enter="handleSearch"
-          />
+          <el-input v-model="searchForm.keyword" placeholder="题目内容" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="题型" prop="type">
           <el-select v-model="searchForm.type" placeholder="请选择" clearable>
-            <el-option
-              v-for="(label, key) in typeMap"
-              :key="key"
-              :label="label"
-              :value="Number(key)"
-            />
+            <el-option v-for="(label, key) in typeMap" :key="key" :label="label" :value="Number(key)" />
           </el-select>
         </el-form-item>
         <el-form-item label="创建时间" prop="dateRange">
-          <el-date-picker
-            v-model="searchForm.dateRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-            :shortcuts="[
+          <el-date-picker v-model="searchForm.dateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
+            end-placeholder="结束日期" value-format="YYYY-MM-DD" :shortcuts="[
               {
                 text: '最近一周',
                 value: () => {
@@ -476,15 +373,18 @@ onActivated(() => {
                   return [start, end]
                 }
               }
-            ]"
-          />
+            ]" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">
-            <el-icon><Search /></el-icon>搜索
+            <el-icon>
+              <Search />
+            </el-icon>搜索
           </el-button>
           <el-button @click="handleReset">
-            <el-icon><Refresh /></el-icon>重置
+            <el-icon>
+              <Refresh />
+            </el-icon>重置
           </el-button>
         </el-form-item>
       </el-form>
@@ -496,30 +396,23 @@ onActivated(() => {
         <div class="table-header">
           <span>试题列表</span>
           <div class="header-buttons">
-            <el-button
-              type="success"
-              :disabled="selectedQuestions.length === 0"
-              @click="exportSelectedQuestions"
-            >
-              <el-icon><Download /></el-icon>导出选中题目 ({{ selectedQuestions.length }})
+            <el-button type="success" :disabled="selectedQuestions.length === 0" @click="exportSelectedQuestions">
+              <el-icon>
+                <Download />
+              </el-icon>导出选中题目 ({{ selectedQuestions.length }})
             </el-button>
             <el-button v-if="userStore.isAdmin()" type="primary" @click="router.push('/input')">
-              <el-icon><Plus /></el-icon>新增试题
+              <el-icon>
+                <Plus />
+              </el-icon>新增试题
             </el-button>
           </div>
         </div>
       </template>
 
-      <el-table
-        :data="currentPageData"
-        v-loading="loading"
-        style="width: 100%"
-        @selection-change="handleSelectionChange"
-      >
-        <el-table-column
-          type="selection"
-          width="55"
-        />
+      <el-table :data="currentPageData" v-loading="loading" style="width: 100%"
+        @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="type" label="题型" width="100">
           <template #default="{ row }">
@@ -528,10 +421,7 @@ onActivated(() => {
         </el-table-column>
         <el-table-column prop="question" label="题目内容">
           <template #default="{ row }">
-            <el-text
-              class="question-content"
-              truncated
-            >
+            <el-text class="question-content" truncated>
               {{ row.question }}
             </el-text>
           </template>
@@ -541,11 +431,15 @@ onActivated(() => {
           <template #default="{ row }">
             <el-button-group>
               <el-button size="small" @click="showDetail(row)">
-                <el-icon><View /></el-icon>查看
+                <el-icon>
+                  <View />
+                </el-icon>查看
               </el-button>
               <template v-if="userStore.isAdmin()">
                 <el-button size="small" type="danger" @click="handleDelete(row)">
-                  <el-icon><Delete /></el-icon>删除
+                  <el-icon>
+                    <Delete />
+                  </el-icon>删除
                 </el-button>
               </template>
             </el-button-group>
@@ -554,59 +448,34 @@ onActivated(() => {
       </el-table>
 
       <div class="pagination">
-        <el-pagination
-          v-model:current-page="pagination.currentPage"
-          v-model:page-size="pagination.pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-          layout="total, sizes, prev, pager, next"
-          background
-        />
+        <el-pagination v-model:current-page="pagination.currentPage" v-model:page-size="pagination.pageSize"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total" @size-change="handleSizeChange"
+          @current-change="handlePageChange" layout="total, sizes, prev, pager, next" background />
       </div>
     </el-card>
 
     <!-- 详情对话框 -->
-    <el-dialog
-      v-model="detailDialogVisible"
-      :title="isEditing ? (currentQuestion && currentQuestion.id ? '编辑试题' : '新建试题') : '试题详情'"
-      width="50%"
-    >
+    <el-dialog v-model="detailDialogVisible"
+      :title="isEditing ? (currentQuestion && currentQuestion.id ? '编辑试题' : '新建试题') : '试题详情'" width="50%">
       <template v-if="currentQuestion">
         <el-form v-if="isEditing" :model="editForm" label-width="100px">
           <el-form-item label="题型">
             <el-select v-model="editForm.type" @change="(val: string | number) => editForm.type = Number(val)">
-              <el-option
-                v-for="(label, type) in typeMap"
-                :key="type"
-                :label="label"
-                :value="Number(type)"
-              />
+              <el-option v-for="(label, type) in typeMap" :key="type" :label="label" :value="Number(type)" />
             </el-select>
           </el-form-item>
 
           <el-form-item label="题目内容">
-            <el-input
-              v-model="editForm.question"
-              type="textarea"
-              :rows="3"
-            />
+            <el-input v-model="editForm.question" type="textarea" :rows="3" />
           </el-form-item>
 
           <!-- 单选题选项 -->
           <template v-if="editForm.type === QuestionType.Single">
-            <el-form-item
-              v-for="(_, index) in editForm.options"
-              :key="index"
-              :label="`选项${String.fromCharCode(65 + index)}`"
-            >
+            <el-form-item v-for="(_, index) in editForm.options" :key="index"
+              :label="`选项${String.fromCharCode(65 + index)}`">
               <el-input v-model="editForm.options[index]">
                 <template #append>
-                  <el-radio
-                    v-model="editForm.correctAnswer"
-                    :label="String.fromCharCode(65 + index)"
-                  />
+                  <el-radio v-model="editForm.correctAnswer" :label="String.fromCharCode(65 + index)" />
                 </template>
               </el-input>
             </el-form-item>
@@ -615,7 +484,7 @@ onActivated(() => {
 
           <!-- 判断题 -->
           <template v-if="editForm.type === QuestionType.Judge">
-            <el-form-item label="正确答案">              <el-radio-group v-model="editForm.correctAnswer">
+            <el-form-item label="正确答案"> <el-radio-group v-model="editForm.correctAnswer">
                 <el-radio value="正确">正确</el-radio>
                 <el-radio value="错误">错误</el-radio>
               </el-radio-group>
@@ -624,11 +493,7 @@ onActivated(() => {
 
           <!-- 填空题 -->
           <template v-if="editForm.type === QuestionType.Fill">
-            <el-form-item
-              v-for="(_, index) in editForm.answers"
-              :key="index"
-              :label="`空${index + 1}答案`"
-            >
+            <el-form-item v-for="(_, index) in editForm.answers" :key="index" :label="`空${index + 1}答案`">
               <el-input v-model="editForm.answers[index]" />
             </el-form-item>
             <el-button @click="editForm.answers.push('')">添加空</el-button>
@@ -637,45 +502,25 @@ onActivated(() => {
           <!-- 编程题 -->
           <template v-if="editForm.type === QuestionType.Program">
             <el-form-item label="示例输入">
-              <el-input
-                v-model="editForm.sampleInput"
-                type="textarea"
-                :rows="3"
-              />
+              <el-input v-model="editForm.sampleInput" type="textarea" :rows="3" />
             </el-form-item>
             <el-form-item label="示例输出">
-              <el-input
-                v-model="editForm.sampleOutput"
-                type="textarea"
-                :rows="3"
-              />
+              <el-input v-model="editForm.sampleOutput" type="textarea" :rows="3" />
             </el-form-item>
             <el-form-item label="参考答案">
-              <el-input
-                v-model="editForm.referenceAnswer"
-                type="textarea"
-                :rows="5"
-              />
+              <el-input v-model="editForm.referenceAnswer" type="textarea" :rows="5" />
             </el-form-item>
           </template>
 
           <!-- 简答题 -->
           <template v-if="editForm.type === QuestionType.ShortAnswer">
             <el-form-item label="参考答案">
-              <el-input
-                v-model="editForm.referenceAnswer"
-                type="textarea"
-                :rows="5"
-              />
+              <el-input v-model="editForm.referenceAnswer" type="textarea" :rows="5" />
             </el-form-item>
           </template>
 
           <el-form-item label="解析">
-            <el-input
-              v-model="editForm.analysis"
-              type="textarea"
-              :rows="3"
-            />
+            <el-input v-model="editForm.analysis" type="textarea" :rows="3" />
           </el-form-item>
         </el-form>
 
@@ -689,11 +534,8 @@ onActivated(() => {
 
           <!-- 单选题特有字段 -->
           <template v-if="currentQuestion.type === QuestionType.Single">
-            <el-descriptions-item
-              v-for="(option, index) in currentQuestion.options"
-              :key="index"
-              :label="`选项${String.fromCharCode(65 + index)}`"
-            >
+            <el-descriptions-item v-for="(option, index) in currentQuestion.options" :key="index"
+              :label="`选项${String.fromCharCode(65 + index)}`">
               {{ option }}
             </el-descriptions-item>
             <el-descriptions-item label="正确答案">
@@ -710,11 +552,8 @@ onActivated(() => {
 
           <!-- 填空题特有字段 -->
           <template v-else-if="currentQuestion.type === QuestionType.Fill">
-            <el-descriptions-item
-              v-for="(answer, index) in currentQuestion.answers"
-              :key="index"
-              :label="`填空${index + 1}答案`"
-            >
+            <el-descriptions-item v-for="(answer, index) in currentQuestion.answers" :key="index"
+              :label="`填空${index + 1}答案`">
               {{ answer }}
             </el-descriptions-item>
           </template>

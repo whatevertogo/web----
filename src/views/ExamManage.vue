@@ -773,8 +773,7 @@ onMounted(() => {
                 v-for="(count, range) in currentExamStatistics.scoreDistribution"
                 :key="range"
                 :percentage="currentExamStatistics.studentCount ? (count / currentExamStatistics.studentCount) * 100 : 0"
-                :color="getScoreColor(range as string)"
-                :stroke-width="20"
+                :color="getScoreColor(range)""                :stroke-width="20"
                 :format="() => `${range}: ${count}人 (${currentExamStatistics.studentCount ? ((count / currentExamStatistics.studentCount) * 100).toFixed(2) : '0.00'}%)`"
                 style="margin-bottom: 10px"
               />

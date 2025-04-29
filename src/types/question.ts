@@ -86,9 +86,8 @@ export interface TableQuestion {
   referenceAnswer?: string;
   analysis?: string;
   createTime: string;
-  // TODO: 以下字段暂未实现相关功能
-  category?: string;  // 待实现：题目分类功能
-  tags?: string[];    // 待实现：题目标签功能
+  category?: string;
+  tags?: string[];
 }
 export interface ApiQuestion {
   id: number;
@@ -101,6 +100,6 @@ export interface ApiQuestion {
   analysis?: string;
   referenceAnswer?: string;
   createTime?: string;
-  category?: string;
   difficulty?: number;
+  category?: string;
 }
