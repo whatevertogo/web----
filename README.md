@@ -1,73 +1,89 @@
-# 题库管理系统
+# 智能题库管理系统
 
-这是一个现代化的在线题库管理系统，基于 Vue 3 + TypeScript 前端和 .NET 8 后端开发。系统支持多种题型管理、在线考试、AI 辅助出题等功能。
+![项目标志](https://via.placeholder.com/150)
 
-## 功能特点
+## 项目概述
+
+这是一个现代化的智能题库管理系统，基于 Vue 3 + TypeScript 前端和 .NET 8 后端开发。系统支持多种题型管理、在线考试组织、AI 辅助出题等功能，为教育教学提供了数字化解决方案。
+
+## 📋 功能特点
 
 ### 题库管理
 
-- 支持单选题、判断题、填空题、编程题、简答题等多种题型
-- 题目导入导出（支持 Word 文档格式）
-- 题目分类管理和搜索
-- AI 辅助出题（基于 DeepSeek API）
+- ✅ 支持多种题型：单选题、判断题、填空题、编程题、简答题等
+- ✅ 题目分类管理和高级搜索
+- ✅ 题目批量导入导出（支持 Word、Excel 格式）
+- ✅ 支持代码高亮显示和 Markdown 格式
 
-### 考试系统（未完成）
+### AI 智能辅助
 
-- 在线组卷和发布考试
-- 学生在线答题
-- 自动评分和成绩统计
-- 考试时间管理
+- ✅ 集成 DeepSeek AI API，实现智能出题
+- ✅ 题目质量评估
+- ✅ 题目生成与智能推荐
+
+### 考试管理
+
+- 🔄 在线组卷和发布考试
+- 🔄 学生在线答题系统
+- 🔄 自动评分和成绩统计
+- 🔄 考试时间和防作弊管理
 
 ### 用户管理
 
-- 基于 JWT 的用户认证
-- 角色权限控制（管理员/教师/学生）
-- 用户信息管理
+- ✅ 基于 JWT 的安全认证体系
+- ✅ 角色权限控制（管理员/教师/学生）
+- ✅ 用户信息和权限管理
+- ✅ 批量导入学生账户
 
-## 技术栈
+## 🛠️ 技术栈
 
 ### 前端
 
-- Vue 3 + TypeScript
-- Vue Router 管理路由
-- Pinia 状态管理
-- Element Plus UI 组件库
-- Vite 构建工具
+- **核心框架**: Vue 3 + TypeScript
+- **状态管理**: Pinia
+- **路由管理**: Vue Router 4
+- **UI组件库**: Element Plus
+- **构建工具**: Vite 6
+- **HTTP客户端**: Axios
+- **文档处理**: DocxTemplater, XLSX
+- **代码高亮**: Highlight.js
+- **Markdown渲染**: Marked + DOMPurify
 
 ### 后端
 
-- .NET 8 WebAPI
-- Entity Framework Core ORM
-- JWT Bearer 认证
-- BCrypt.NET 密码加密
-- MySQL/SQL Server 数据库
-- Swagger API 文档
+- **框架**: .NET 8 WebAPI
+- **ORM**: Entity Framework Core 8
+- **认证**: JWT Bearer Authentication
+- **加密**: BCrypt.NET
+- **数据库**: Microsoft SQL Server / MySQL (使用 Pomelo.EntityFrameworkCore.MySql)
+- **API文档**: Swagger / OpenAPI
+- **依赖注入**: 内置 .NET 依赖注入容器
 
 ### AI 集成
 
-- DeepSeek API 集成
-- 支持多种 AI 模型
-- 智能对话和题目生成
+- **API集成**: DeepSeek API
+- **智能对话**: 基于大型语言模型
+- **题目生成**: 提示工程和上下文控制
 
-## 快速开始
+## 🚀 快速开始
 
 ### 环境要求
 
-- Node.js 18+
-- .NET SDK 8.0+
-- MySQL 8.0+ 或 SQL Server
-- Visual Studio Code 或 Visual Studio 2022
+- **前端**: Node.js 18+
+- **后端**: .NET SDK 8.0+
+- **数据库**: MySQL 8.0+ 或 SQL Server
+- **IDE**: Visual Studio Code 或 Visual Studio 2022
 
 ### 安装步骤
 
-1. 克隆项目
+#### 1. 克隆项目
 
 ```bash
-git clone https://github.com/用户名/2306053105.git
+git clone https://github.com/你的用户名/2306053105.git
 cd 2306053105
 ```
 
-2. 前端设置
+#### 2. 前端设置
 
 ```bash
 # 安装依赖
@@ -77,7 +93,7 @@ npm install
 npm run dev
 ```
 
-3. 后端设置
+#### 3. 后端设置
 
 ```bash
 cd QuestionBankApi
@@ -85,47 +101,63 @@ cd QuestionBankApi
 # 还原 NuGet 包
 dotnet restore
 
-# 更新数据库
+# 更新数据库 (确保已正确配置数据库连接字符串)
 dotnet ef database update
 
 # 运行项目
 dotnet run
 ```
 
-4. 配置 DeepSeek API（可选）
+#### 4. 配置 DeepSeek API (可选)
 
-- 在 \`appsettings.json\` 中设置你的 DeepSeek API 密钥
+在 `QuestionBankApi/appsettings.json` 中配置：
 
-## 项目结构
+```json
+{
+  "DeepSeek": {
+    "ApiKey": "你的API密钥",
+    "Model": "deepseek-chat"
+  }
+}
+```
 
-```plaintext
+## 📁 项目结构
+
+```
 2306053105/
 ├─src/                    # 前端源码
 │  ├─assets/             # 静态资源
-│  ├─components/         # 组件
-│  ├─services/           # API 服务
-│  ├─stores/             # Pinia 状态管理
-│  ├─views/              # 页面组件
-│  └─...
+│  ├─components/         # Vue组件
+│  ├─router/             # 路由定义
+│  ├─services/           # API服务
+│  ├─stores/             # Pinia状态管理
+│  ├─types/              # TypeScript类型定义
+│  ├─utils/              # 工具函数
+│  └─views/              # 页面组件
+├─public/                # 静态资源
+│  └─templates/          # 导出模板
 └─QuestionBankApi/       # 后端源码
-   ├─Controllers/        # API 控制器
+   ├─Controllers/        # API控制器
+   ├─Data/               # 数据访问层
+   ├─DeepSeek/           # AI集成服务
+   ├─DTOs/               # 数据传输对象
+   ├─LoginSystemApi/     # 用户认证系统
+   ├─Migrations/         # EF Core迁移
    ├─Models/             # 数据模型
-   ├─Services/           # 业务服务
-   ├─DeepSeek/          # AI 集成服务
-   └─...
+   └─Services/           # 业务逻辑服务
 ```
 
-## 部署
+## 📦 部署指南
 
 ### 前端部署
 
-1. 构建生产版本
+1. 构建生产版本:
 
-    ```bash
-    npm run build
-    ```
+```bash
+npm run build
+```
 
-2. 将 `dist` 目录部署到 Web 服务器
+2. 将 `dist` 目录部署到 Web 服务器 (Nginx, Apache, IIS等)
 
 ### 后端部署
 
@@ -134,21 +166,33 @@ cd QuestionBankApi
 dotnet publish -c Release
 ```
 
-## 许可证
+部署到 IIS, Azure App Service, Docker容器或其他支持 .NET 的托管服务
 
-该项目使用 MIT 许可证。
+## 📈 未来计划
 
-## 联系方式
+- 完善考试系统功能
+- 增加数据分析和可视化模块
+- 优化AI出题
 
-如有问题或建议，请通过以下方式联系：
+## 📄 许可证
+
+该项目采用 MIT 许可证
+
+## 📞 联系方式
+
+如有问题或建议，请通过以下方式联系:
 
 - Email: <1879483647@qq.com>
-- GitHub: [https://github.com/用户名/2306053105/issues](https://github.com/用户名/2306053105/issues)
+- GitHub: [https://github.com/whatevertogo/2306053105/issues](https://github.com/whatevertogo/2306053105/issues)
 
-## 更新日志
+## 📋 更新日志
+
+### 2025-04-29
+- 优化题库管理界面
+- 改进用户体验
+- 修复已知问题
 
 ### 2025-04-18
-
 - 完成题库管理基本功能
 - 集成 DeepSeek API
 - 实现用户认证和权限控制
