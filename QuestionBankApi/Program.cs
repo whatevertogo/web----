@@ -40,7 +40,7 @@ builder.Services.AddCors(options =>
             .WithExposedHeaders(       // 允许前端访问的响应头
                 "Content-Disposition"
             )
-            .AllowCredentials()        // 允许发送认证信息（cookies等）
+            .AllowCredentials()        // 允许发送认证信息（cookies，http认证头）
             .SetPreflightMaxAge(TimeSpan.FromMinutes(10)); // 预检请求缓存时间
     });
 });
